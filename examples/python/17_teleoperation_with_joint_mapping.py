@@ -301,7 +301,7 @@ def main(address, model, power, servo, control_mode):
     ma_max_q = np.deg2rad(
         [360, -10, 90, -60, 90, 80, 360, 360, 30, 0, -60, 90, 80, 360]
     )
-    ma_torque_limit = np.array([3.5, 3.5, 3.5, 1.5, 1.5, 1.5, 1.5] * 2)
+    ma_torque_limit = np.array([1.46, 1.46, 1.46, 0.6, 0.6, 0.6, 0.6] * 2)
     ma_viscous_gain = np.array([0.02, 0.02, 0.02, 0.02, 0.01, 0.01, 0.002] * 2)
     right_q = None
     left_q = None
