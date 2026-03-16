@@ -13,7 +13,7 @@
 # Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
-import rby1_sdk
+import rby1_sdk as rby
 import argparse
 import numpy as np
 
@@ -21,9 +21,8 @@ np.set_printoptions(precision=3, suppress=True, floatmode="fixed")
 
 
 def main(address, model, power):
-    robot = rby1_sdk.create_robot(address, model)
-    robot.connect()
-    if not robot.is_connected():
+    robot = rby.create_robot(address, model)
+    if not robot.connect():
         print("Robot is not connected")
         exit(1)
     if not robot.is_power_on(power):
@@ -33,7 +32,7 @@ def main(address, model, power):
             exit(1)
 
     robot_state = robot.get_state()
-    with rby1_sdk.printoptions(linewidth=10**9, multiline_repr=True):
+    with rby.printoptions(linewidth=10**9, multiline_repr=True):
         print(repr(robot_state))
 
 

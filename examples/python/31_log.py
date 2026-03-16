@@ -1,12 +1,24 @@
-import rby1_sdk
+# Log Example
+# This example connects to the robot, retrieves the most recent log entries,
+# and prints them to the console.
+#
+# Usage example:
+# python 31_log.py --address 192.168.30.1:50051 --model a --num-entries 10
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
+import rby1_sdk as rby
 import argparse
 
-
 def main(address, model, num_entries):
-    robot = rby1_sdk.create_robot(address, model)
+    robot = rby.create_robot(address, model)
 
-    robot.connect()
-    if not robot.is_connected():
+    if not robot.connect():
         print("Robot is not connected")
         exit(1)
 
