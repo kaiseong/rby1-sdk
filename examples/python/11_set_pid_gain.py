@@ -1,8 +1,10 @@
 # Set PID Gain Demo
-# This example is part of the RB-Y1 SDK examples. See --help for arguments.
+# This example connects to an RB-Y1 robot, reads the current PID gains for
+# selected joints, updates those gains using different setter forms, and then
+# restores the original values.
 #
 # Usage example:
-#     python 11_set_pid_gain.py --help
+#     python 11_set_pid_gain.py --address 192.168.30.1:50051 --model a
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -12,7 +14,7 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 
-import rby1_sdk
+import rby1_sdk as rby
 import time
 import argparse
 import logging
@@ -24,10 +26,9 @@ logging.basicConfig(
 
 def main(address, model):
     logging.info(f"Creating robot with address='{address}', model='{model}'")
-    robot = rby1_sdk.create_robot(address, model)
-    robot.connect()
-
-    if not robot.is_connected():
+    robot = rby.create_robot(address, model)
+    
+    if not robot.connect():
         logging.error("Robot is not connected")
         exit(1)
 
@@ -46,6 +47,7 @@ def main(address, model):
     try:
         logging.info(f">>> [START] {target_joint_name}")
         original_gain = robot.get_position_pid_gain(target_joint_name)
+        print(original_gain)
         logging.info(
             f"[Before] [{target_joint_name}] P: {original_gain.p_gain}, I: {original_gain.i_gain}, D: {original_gain.d_gain}"
         )

@@ -1,5 +1,19 @@
+# Multi-Controls Example
+# This example initializes the robot, sends overlapping body and arm joint position
+# commands with different priorities, and prints each command handle's finish code.
+#
+# Usage example:
+#   python 27_multi_controls.py --address 192.168.30.1:50051 --model a --power '.*' --servo '.*'
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
 import rby1_sdk as rby
-from helper import *
+import helper
 import numpy as np
 import time
 import argparse
@@ -13,34 +27,25 @@ logging.basicConfig(
 
 @dataclass
 class Pose:
-    torso: np.typing.NDArray
     right_arm: np.typing.NDArray
     left_arm: np.typing.NDArray
 
 
-READY_POSE = {
-    "A": Pose(
-        torso=np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]),
-        right_arm=np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-        left_arm=np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-    ),
-    "M": Pose(
-        torso=np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]),
-        right_arm=np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-        left_arm=np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-    ),
-}
+READY_POSE = Pose(
+    right_arm=np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
+    left_arm=np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
+)
 
 
 def main(address, model, power, servo):
-    robot: rby.Robot_A = initialize_robot(address, model, power, servo)
-    model: rby.Model_A = robot.model()
+    robot: rby.Robot_A = helper.initialize_robot(address, model, power, servo)
+    robot_model: rby.Model_A = robot.model()
     minimum_time = 2
     robot_handle = robot.send_command(
         rby.RobotCommandBuilder().set_command(
             rby.ComponentBasedCommandBuilder().set_body_command(
                 rby.JointPositionCommandBuilder()
-                .set_position(np.zeros(len(model.body_idx)))
+                .set_position(np.zeros(len(robot_model.body_idx)))
                 .set_minimum_time(minimum_time)
             )
         ),
@@ -53,7 +58,7 @@ def main(address, model, power, servo):
             rby.ComponentBasedCommandBuilder().set_body_command(
                 rby.BodyComponentBasedCommandBuilder().set_right_arm_command(
                     rby.JointPositionCommandBuilder()
-                    .set_position(READY_POSE[model.model_name].right_arm)
+                    .set_position(READY_POSE.right_arm)
                     .set_minimum_time(minimum_time)
                 )
             )
@@ -67,7 +72,7 @@ def main(address, model, power, servo):
             rby.ComponentBasedCommandBuilder().set_body_command(
                 rby.BodyComponentBasedCommandBuilder().set_left_arm_command(
                     rby.JointPositionCommandBuilder()
-                    .set_position(READY_POSE[model.model_name].left_arm)
+                    .set_position(READY_POSE.left_arm)
                     .set_minimum_time(minimum_time)
                 )
             )

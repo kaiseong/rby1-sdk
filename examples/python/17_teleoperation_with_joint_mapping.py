@@ -1,9 +1,21 @@
-"""
-Teleoperation Example
+# Teleoperation Example
+#
+# This example initializes the robot, gripper, and master arm connected to a UPC, moves the robot to a
+# ready pose, and streams teleoperation commands that map master arm joint motion and trigger input to
+# robot arm and gripper control.
+#
+# Usage example:
+#     python 17_teleoperation_with_joint_mapping.py --address 192.168.30.1:50051 --model a --power '.*' --servo 'torso_.*|right_arm_.*|left_arm_.*' --mode position
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
 
-Run this example on UPC to which the master arm and hands are connected
-"""
 
+# Run this example on a UPC to which the master arm and gripper are connected.
 import rby1_sdk as rby
 import numpy as np
 import os
@@ -25,31 +37,24 @@ logging.basicConfig(
 
 @dataclass
 class Pose:
-    toros: np.typing.NDArray
+    torso: np.typing.NDArray
     right_arm: np.typing.NDArray
     left_arm: np.typing.NDArray
 
 
 class Settings:
     master_arm_loop_period = 1 / 100
-
     impedance_stiffness = 50
     impedance_damping_ratio = 1.0
     impedance_torque_limit = 30.0
 
 
-READY_POSE = {
-    "A": Pose(
-        toros=np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]),
+READY_POSE = Pose(
+        torso=np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]),
         right_arm=np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
         left_arm=np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-    ),
-    "M": Pose(
-        toros=np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]),
-        right_arm=np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-        left_arm=np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-    ),
-}
+    )
+
 
 
 class Gripper:
@@ -106,7 +111,7 @@ class Gripper:
             self.max_q = np.maximum(self.max_q, q)
             if np.array_equal(prev_q, q):
                 counter += 1
-            prev_q = q
+            prev_q = q.copy()
             if counter >= 30:
                 direction += 1
                 counter = 0
@@ -136,7 +141,6 @@ class Gripper:
             time.sleep(0.1)
 
     def set_target(self, normalized_q):
-        # self.target_q = normalized_q * (self.max_q - self.min_q) + self.min_q
         if not np.isfinite(self.min_q).all() or not np.isfinite(self.max_q).all():
             logging.error("Cannot set target. min_q or max_q is not valid.")
             return
@@ -200,7 +204,7 @@ def joint_position_command_builder(
                 .set_command_header(
                     rby.CommandHeaderBuilder().set_control_hold_time(control_hold_time)
                 )
-                .set_position(pose.toros)
+                .set_position(pose.torso)
                 .set_minimum_time(minimum_time)
             )
             .set_right_arm_command(right_arm_builder)
@@ -263,7 +267,7 @@ def main(address, model, power, servo, control_mode):
             logging.error(f"Failed to set tool flange output voltage ({arm}) as 12v")
             exit(1)
     robot.set_parameter("joint_position_command.cutoff_frequency", "3")
-    move_j(robot, READY_POSE[model.model_name], 5)
+    move_j(robot, READY_POSE, 5)
 
     def robot_state_callback(state: rby.RobotState_A):
         nonlocal robot_q
@@ -310,7 +314,7 @@ def main(address, model, power, servo, control_mode):
     stream = robot.create_command_stream(priority=1)  # TODO
     stream.send_command(
         joint_position_command_builder(
-            READY_POSE[model.model_name],
+            READY_POSE,
             minimum_time=5,
             control_hold_time=1e6,
             position_mode=position_mode,
@@ -377,7 +381,10 @@ def main(address, model, power, servo, control_mode):
             ma_input.target_torque[7:14] = ma_torque_limit[7:14]
             ma_input.target_position[7:14] = left_q
 
-        # Check whether target configure is in collision
+        # Check whether the target configuration is in collision
+        if robot_q is None:
+            return ma_input
+
         q = robot_q.copy()
         q[model.right_arm_idx] = right_q
         q[model.left_arm_idx] = left_q
@@ -481,12 +488,14 @@ def main(address, model, power, servo, control_mode):
     def handler(signum, frame):
         robot.stop_state_update()
         master_arm.stop_control()
+        stream.cancel()
         robot.cancel_control()
         time.sleep(0.5)
 
         robot.disable_control_manager()
         robot.power_off("12v")
         gripper.stop()
+        robot.disconnect()
         exit(1)
 
     signal.signal(signal.SIGINT, handler)

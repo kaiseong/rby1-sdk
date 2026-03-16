@@ -1,3 +1,20 @@
+# Master Arm Example
+#
+# This example powers on the UPC master arm, initializes it with its URDF model, and runs a
+# gravity-compensated current-control loop while printing the master arm state.
+#
+# Usage example:
+#     python 19_master_arm.py --address 192.168.30.1:50051 --model a
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+#
+# Run this example on a UPC to which the master arm is connected.
+
 import os
 import rby1_sdk as rby
 import numpy as np
@@ -9,9 +26,8 @@ import signal
 
 def main(address, model):
     robot = rby.create_robot(address, model)
-    robot.connect()
-
-    if not robot.is_connected():
+    
+    if not robot.connect():
         print("Error: Robot connection failed.")
         exit(1)
 
@@ -45,12 +61,12 @@ def main(address, model):
                 f"right: {state.button_right.button}, left: {state.button_left.button}"
             )
 
-        input = rby.upc.MasterArm.ControlInput()
+        control_input = rby.upc.MasterArm.ControlInput()
 
-        input.target_operating_mode.fill(rby.DynamixelBus.CurrentControlMode)
-        input.target_torque = state.gravity_term
+        control_input.target_operating_mode.fill(rby.DynamixelBus.CurrentControlMode)
+        control_input.target_torque = state.gravity_term
 
-        return input
+        return control_input
 
     master_arm.start_control(control)
 
