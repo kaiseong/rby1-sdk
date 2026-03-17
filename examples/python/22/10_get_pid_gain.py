@@ -2,7 +2,7 @@
 # This example is part of the RB-Y1 SDK examples. See --help for arguments.
 #
 # Usage example:
-#     python 10_get_pid_gain.py --address 127.0.0.1:50051 --model a
+#     python 10_get_pid_gain.py --help
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -21,7 +21,6 @@ logging.basicConfig(
 )
 
 
-def main(address, model):
     robot = rby.create_robot(address, model)
     if not robot.connect():
         logging.error("Robot connection failed")
