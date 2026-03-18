@@ -1,8 +1,9 @@
+# Note: This example does not run in simulation.
 # Get PID Gain Demo
-# This example is part of the RB-Y1 SDK examples. See --help for arguments.
-#
+# This example demonstrates how to get PID gains of the robot. See --help for arguments.
+# 
 # Usage example:
-#     python 10_get_pid_gain.py --help
+#     python 10_get_pid_gain.py --address 127.0.0.1:50051 --model a
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -11,7 +12,7 @@
 # Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
-import rby1_sdk
+import rby1_sdk as rby
 import time
 import argparse
 import logging
@@ -22,10 +23,8 @@ logging.basicConfig(
 
 
 def main(address, model):
-    robot = rby1_sdk.create_robot(address, model)
-    robot.connect()
-
-    if not robot.is_connected():
+    robot = rby.create_robot(address, model)
+    if not robot.connect():
         logging.error("Robot connection failed")
         exit(1)
 

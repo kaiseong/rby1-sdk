@@ -1,5 +1,21 @@
+# Joint Impedance Control Demo
+# This example demonstrates how to control the robot's joints using impedance control. See --help for arguments.
+# Scenario
+# 1. Move to zero position
+# 2. Move to ready position
+# 3. Move only the right arm to zero position while impedance control
+# Usage example:
+#     python 22_joint_impedance_control.py --address 127.0.0.1:50051 --model a
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
 import rby1_sdk as rby
-from helper import *
+import helper
 import argparse
 import numpy as np
 import logging
@@ -10,40 +26,28 @@ logging.basicConfig(
 
 
 READY_POSE = {
-    "A": {
-        "toros": np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]),
-        "right_arm": np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-        "left_arm": np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-    },
-    "M": {
-        "toros": np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]),
-        "right_arm": np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-        "left_arm": np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-    },
-    "UB": {
-        "toros": np.deg2rad([10.0, 0.0]),
-        "right_arm": np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-        "left_arm": np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-    }
+    "torso": np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]),
+    "right_arm": np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
+    "left_arm": np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
 }
 
 
 def main(address, model, power, servo):
-    robot = initialize_robot(address, model, power, servo)
+    robot = helper.initialize_robot(address, model, power, servo)
 
     model = robot.model()
-    movej(  # Zero Pose
+    helper.movej(  # Zero Pose
         robot,
         np.zeros(len(model.torso_idx)),
         np.zeros(len(model.right_arm_idx)),
         np.zeros(len(model.left_arm_idx)),
         minimum_time=5,
     )
-    movej(  # Ready Pose
+    helper.movej(  # Ready Pose
         robot,
-        READY_POSE[model.model_name]["toros"],
-        READY_POSE[model.model_name]["right_arm"],
-        READY_POSE[model.model_name]["left_arm"],
+        READY_POSE["torso"],
+        READY_POSE["right_arm"],
+        READY_POSE["left_arm"],
         minimum_time=5,
     )
 
@@ -76,6 +80,20 @@ def main(address, model, power, servo):
                 .set_damping_ratio(1.0)
                 .set_torque_limit([10] * len(model.right_arm_idx))
             )
+            # -- Left Arm --
+            # .set_left_arm_command(
+            #     rby.JointImpedanceControlCommandBuilder()
+            #     .set_command_header(
+            #         rby.CommandHeaderBuilder().set_control_hold_time(10)
+            #     )
+            #     .set_position([0.0] * len(model.left_arm_idx))
+            #     # .set_velocity_limit([np.inf] * len(model.torso_idx))
+            #     # .set_acceleration_limit([np.inf] * len(model.torso_idx))
+            #     .set_minimum_time(5)
+            #     .set_stiffness([100.0] * len(model.torso_idx))
+            #     .set_damping_ratio(1.0)
+            #     # .set_torque_limit([100] * len(model.torso_idx))
+            # )
         )
     )
     handler = robot.send_command(rc_builder)
