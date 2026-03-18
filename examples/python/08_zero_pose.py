@@ -1,8 +1,8 @@
 # Zero Pose Demo
-# This example is part of the RB-Y1 SDK examples. See --help for arguments.
+# This example demonstrates how to move robot to zero pose. See --help for arguments.
 #
 # Usage example:
-#     python 08_zero_pose.py --help
+#     python 08_zero_pose.py --address 192.168.30.1:50051 --model a --power '.*' --servo '.*'
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -12,24 +12,25 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 import rby1_sdk as rby
-from helper import *
+import helper # local helper functions. See helper.py in this file path
 import argparse
 import numpy as np
 import logging
 
+# initialize logger for helper functions
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 
 def main(address, model, power, servo):
-    robot = initialize_robot(address, model, power, servo)
+    robot = helper.initialize_robot(address, model, power, servo)
 
     model = robot.model()
     torso_dof = len(model.torso_idx)
     right_arm_dof = len(model.right_arm_idx)
     left_arm_dof = len(model.left_arm_idx)
-    movej(
+    helper.movej(
         robot,
         np.zeros(torso_dof),
         np.zeros(right_arm_dof),

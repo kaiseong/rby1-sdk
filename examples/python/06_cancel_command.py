@@ -1,8 +1,8 @@
-# Stop Command Demo
-# This example is part of the RB-Y1 SDK examples. See --help for arguments.
+# Cancel Command Demo
+# This example demonstrates how to cancel robot control. See --help for arguments.
 #
 # Usage example:
-#     python 06_stop_command.py --help
+#     python 06_cancel_command.py --address 192.168.30.1:50051 --model a
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -12,15 +12,14 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 
-import rby1_sdk
+import rby1_sdk as rby
 import time
 import argparse
 
 
 def main(address, model):
-    robot = rby1_sdk.create_robot(address, model)
-    robot.connect()
-    if not robot.is_connected():
+    robot = rby.create_robot(address, model)
+    if not robot.connect():
         print("Robot is not connected")
         exit(1)
     robot.cancel_control()
@@ -35,3 +34,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(address=args.address, model=args.model)
+

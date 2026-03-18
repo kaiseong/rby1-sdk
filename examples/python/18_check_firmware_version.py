@@ -1,14 +1,24 @@
-import rby1_sdk
-from rby1_sdk import *
+# Check Firmware Version Demo
+# This example demonstrates how to check the motor info(name, brake, product_name, firmware version) of the robot. See --help for arguments.
+#
+# Usage example:
+#     python 18_check_firmware_version.py --address 127.0.0.1:50051 --model a
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
+import rby1_sdk as rby
 import argparse
 import time
 
 
 def main(address, power, model):
-    robot = rby1_sdk.create_robot(address, model)
-    robot.connect()
-
-    if not robot.is_connected():
+    robot = rby.create_robot(address, model)
+    if not robot.connect():
         print("Robot is not connected")
         exit(1)
 
