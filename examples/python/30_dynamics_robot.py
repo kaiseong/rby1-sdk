@@ -1,3 +1,16 @@
+# Dynamics Robot Demo
+# This example demonstrates how to control the robot using dynamics. See --help for arguments.
+#
+# Usage example:
+#     python 30_dynamics_robot.py --address 127.0.0.1:50051 --model a
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
 import rby1_sdk as rby
 import rby1_sdk.dynamics as rby_dyn
 

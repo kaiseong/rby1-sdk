@@ -12,7 +12,7 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 import rby1_sdk as rby
-from helper import initialize_robot, movej # local helper functions. See helper.py in this file path
+import helper # local helper functions. See helper.py in this file path
 import argparse
 import numpy as np
 import logging
@@ -24,13 +24,13 @@ logging.basicConfig(
 
 
 def main(address, model, power, servo):
-    robot = initialize_robot(address, model, power, servo)
+    robot = helper.initialize_robot(address, model, power, servo)
 
     model = robot.model()
     torso_dof = len(model.torso_idx)
     right_arm_dof = len(model.right_arm_idx)
     left_arm_dof = len(model.left_arm_idx)
-    movej(
+    helper.movej(
         robot,
         np.zeros(torso_dof),
         np.zeros(right_arm_dof),
