@@ -1,7 +1,7 @@
 # Motion Demo
 # This example connects to an RB-Y1 robot, configures the control manager,
 # and runs joint position, Cartesian, impedance, optimal control,
-# and mixed command demos in sequence.
+# and mixed command demos in sequence. See --help for arguments.
 #
 # Usage example:
 #     python 09_demo_motion.py --address 192.168.30.1:50051 --model a --power '.*' --servo '.*'

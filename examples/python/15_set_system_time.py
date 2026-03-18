@@ -3,7 +3,7 @@
 # This example includes the following features:
 # 1. Reading the robot's current system time and timezone.
 # 2. Setting the robot system time with an explicit timezone string.
-# 3. Setting the robot system time using a timezone-aware datetime object.
+# 3. Setting the robot system time using a timezone-aware datetime object. See --help for arguments.
 #
 # Usage example:
 #     python 15_set_system_time.py --address 192.168.30.1:50051 --model a

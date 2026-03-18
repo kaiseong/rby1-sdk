@@ -1,7 +1,7 @@
 # Impedance Control Demo
 # This example demonstrates how to connect to an RB-Y1 robot, set motion parameters,
 # perform an initial joint motion, send a Cartesian command, and then run an impedance
-# control command for the right arm.
+# control command for the right arm. See --help for arguments.
 #
 # Usage example:
 #     python 07_impedance_control.py --address 192.168.30.1:50051 --model a --power '.*' --servo '.*'

@@ -1,7 +1,7 @@
 # Fault Log Example
 #
 # This example connects to the robot, prints the available fault log files, and downloads the first fault
-# log as ``fault.csv`` when one is available.
+# log as ``fault.csv`` when one is available. See --help for arguments.
 #
 # Usage example:
 #     python 25_fault_log.py --address 192.168.30.1:50051 --model a
