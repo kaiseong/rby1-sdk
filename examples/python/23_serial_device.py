@@ -1,6 +1,6 @@
 # Serial Device List Example
 #
-# This example connects to the robot and prints the list of available serial devices detected by the system.
+# This example connects to the robot and prints the list of available serial devices detected by the system. See --help for arguments.
 #
 # Usage example:
 #     python 23_serial_device.py --address 192.168.30.1:50051

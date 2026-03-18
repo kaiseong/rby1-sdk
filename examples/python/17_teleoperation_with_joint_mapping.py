@@ -2,7 +2,7 @@
 #
 # This example initializes the robot, gripper, and master arm connected to a UPC, moves the robot to a
 # ready pose, and streams teleoperation commands that map master arm joint motion and trigger input to
-# robot arm and gripper control.
+# robot arm and gripper control. See --help for arguments.
 #
 # Usage example:
 #     python 17_teleoperation_with_joint_mapping.py --address 192.168.30.1:50051 --model a --power '.*' --servo 'torso_.*|right_arm_.*|left_arm_.*' --mode position

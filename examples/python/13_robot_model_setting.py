@@ -3,7 +3,7 @@
 # This example includes the following features:
 # 1. Loading the current robot model (in URDF format) from the robot.
 # 2. Saving a custom robot model to the robot with a specified name.
-# 3. Assigning the robot model name for the robot to use (applied after reboot).
+# 3. Assigning the robot model name for the robot to use (applied after reboot). See --help for arguments.
 #
 # Usage example:
 #     python 13_robot_model_setting.py --address 192.168.30.1:50051 --model a

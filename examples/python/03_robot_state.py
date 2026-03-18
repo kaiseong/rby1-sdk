@@ -1,7 +1,7 @@
 # Robot State Demo
 # This example demonstrates how to connect to an RB-Y1 robot, ensure specified
 # power devices (by regex) are on, retrieve the current robot state, and print
-# it in a readable form.
+# it in a readable form. See --help for arguments.
 #
 # Usage example:
 #     python 03_robot_state.py --address 192.168.30.1:50051 --model a --power '.*'

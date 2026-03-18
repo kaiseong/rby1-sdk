@@ -1,7 +1,7 @@
 # Master Arm Example
 #
 # This example powers on the UPC master arm, initializes it with its URDF model, and runs a
-# gravity-compensated current-control loop while printing the master arm state.
+# gravity-compensated current-control loop while printing the master arm state. See --help for arguments.
 #
 # Usage example:
 #     python 19_master_arm.py --address 192.168.30.1:50051 --model a

@@ -1,6 +1,6 @@
 # Tool Flange State Example
 # This example connects to the robot, powers on the 48V tool flange supply if needed,
-# subscribes to robot state updates, and prints the left and right tool flange states.
+# subscribes to robot state updates, and prints the left and right tool flange states. See --help for arguments.
 #
 # Usage example:
 #   python 33_state_tool_flange.py --address 192.168.30.1:50051 --model a

@@ -1,6 +1,6 @@
 # Log Example
 # This example connects to the robot, retrieves the most recent log entries,
-# and prints them to the console.
+# and prints them to the console. See --help for arguments.
 #
 # Usage example:
 # python 31_log.py --address 192.168.30.1:50051 --model a --num-entries 10

@@ -1,6 +1,6 @@
 # Dynamics Modeling Example
 # This example builds a minimal two-link dynamics model, sets a joint angle,
-# computes forward kinematics, and prints the transform from link_0 to link_1.
+# computes forward kinematics, and prints the transform from link_0 to link_1. See --help for arguments.
 #
 # Usage example:
 #   python 29_dynamics_modeling.py
