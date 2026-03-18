@@ -1,6 +1,7 @@
 # Multi-Controls Example
 # This example initializes the robot, sends overlapping body and arm joint position
 # commands with different priorities, and prints each command handle's finish code. See --help for arguments.
+# Note: This example uses local helper functions. See helper.py in this file path.
 #
 # Usage example:
 #   python 27_multi_controls.py --address 192.168.30.1:50051 --model a --power '.*' --servo '.*'
