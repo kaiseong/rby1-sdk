@@ -2,6 +2,7 @@
 #
 # This example brings up the robot, disables the control manager after a short delay, and turns off the
 # servo for the specified joints. See --help for arguments.
+# Note: This example uses local helper functions. See helper.py in this file path.
 #
 # Usage example:
 #     python 21_servo_off.py --address 192.168.30.1:50051 --model a --power '.*' --servo '^(head).*'
