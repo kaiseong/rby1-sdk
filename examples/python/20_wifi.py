@@ -1,5 +1,19 @@
+# Note: This example does not run in simulation.
+# WiFi Setup Demo
+# This example demonstrates how to setup the rpc's WiFi connection. See --help for arguments.
+#
+# Usage example:
+#     python 20_wifi.py --address 127.0.0.1:50051 --model a
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
 import curses
-import rby1_sdk
+import rby1_sdk as rby
 import argparse
 import time
 import sys
@@ -147,9 +161,8 @@ def loading_animation(event):
 
 
 def main(address, model):
-    robot = rby1_sdk.create_robot(address, model)
-    robot.connect()
-    if not robot.is_connected():
+    robot = rby.create_robot(address, model)
+    if not robot.connect():
         print("Robot is not connected")
         exit(1)
 
