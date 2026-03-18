@@ -1,3 +1,16 @@
+# Serial Communication Demo
+# This example demonstrates how to setup the rpc's serial communication. See --help for arguments.
+#
+# Usage example:
+#     python 24_serial_communication.py --address 127.0.0.1:50051 --device_path /dev/ttyUSB1 --baudrate 19200
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
 import time
 import rby1_sdk as rby
 import argparse
@@ -6,9 +19,8 @@ import threading
 
 def main(address, device_path, baudrate):
     robot = rby.create_robot_a(address)
-    robot.connect()
-
-    if not robot.is_connected():
+    
+    if not robot.connect():
         print("Error: Robot connection failed.")
         exit(1)
 

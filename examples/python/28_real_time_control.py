@@ -1,5 +1,24 @@
+# Real Time Control Demo
+# This example demonstrates how to control the robot using real time control. See --help for arguments.
+#
+# Usage example:
+#     python 28_real_time_control.py --address 127.0.0.1:50051 --model a
+#
+# Scenario
+# - real-time control cannot use the builder type commands provided by the existing SDK
+# - In this example, a separate controller is implemented and used.
+# 1. stream on
+# 2. Move to ready position
+# 3. wait next command
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
 import rby1_sdk as rby
-from helper import *
+import helper
 import numpy as np
 import argparse
 import logging
@@ -12,7 +31,7 @@ logging.basicConfig(
 
 class RealTimeControl:
     def __init__(self, address, power, servo):
-        self.robot: rby.Robot_A = initialize_robot(address, "a", power, servo)
+        self.robot: rby.Robot_A = helper.initialize_robot(address, "a", power, servo)
         self.model = self.robot.model()
 
         self.target_position = None
@@ -81,34 +100,15 @@ def main(address, power, servo):
         np.deg2rad(
             [
                 # wheel
-                0.0,
-                0.0,
+                0.0,0.0,
                 # torso
-                0.0,
-                45.0,
-                -90.0,
-                45.0,
-                0.0,
-                0.0,
+                0.0,45.0,-90.0,45.0,0.0,0.0,
                 # right arm
-                0.0,
-                -5.0,
-                0.0,
-                -120.0,
-                0.0,
-                70.0,
-                0.0,
+                0.0,-5.0,0.0,-120.0,0.0,70.0,0.0,
                 # left arm
-                0.0,
-                5.0,
-                0.0,
-                -120.0,
-                0.0,
-                70.0,
-                0.0,
+                0.0,5.0,0.0,-120.0,0.0,70.0,0.0,
                 # head
-                0.0,
-                0.0,
+                0.0,0.0,
             ]
         ),
         minimum_time=2,

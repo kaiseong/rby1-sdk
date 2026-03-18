@@ -1,14 +1,24 @@
-import rby1_sdk
+# Battery Config Demo
+# This example demonstrates how to control(set,reset) the battery configuration of the robot. See --help for arguments.
+#
+# Usage example:
+#     python 16_battery_config.py --address 127.0.0.1:50051 --model a
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
+import rby1_sdk as rby
 import argparse
 import time
-from datetime import datetime
-from zoneinfo import ZoneInfo
 
 
 def main(address, model):
-    robot = rby1_sdk.create_robot(address, model)
-    robot.connect()
-    if not robot.is_connected():
+    robot = rby.create_robot(address, model)
+    if not robot.connect():
         print("Failed to connect robot")
         exit(1)
 
