@@ -2,6 +2,8 @@
 # This example connects to an RB-Y1 robot, reads the current PID gains for
 # selected joints, updates those gains using different setter forms, and then
 # restores the original values. See --help for arguments.
+# Note: Disable the control manager before changing PID gains.
+# Note: This example is not supported in simulation.
 #
 # Usage example:
 #     python 11_set_pid_gain.py --address 192.168.30.1:50051 --model a
