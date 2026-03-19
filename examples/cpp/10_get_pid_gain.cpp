@@ -30,7 +30,9 @@ int main(int argc, char** argv) {
   }
 
   std::cout << std::endl << " >>> Using Component Name" << std::endl;
-  auto gain_list = robot->GetTorsoPositionPIDGains();
+  std::vector<PIDGain> gain_list;
+  try {
+  gain_list = robot->GetTorsoPositionPIDGains();
   for (auto i = 0; i < gain_list.size(); i++) {
     std::cout << "[torso_" << i << "] p gain: " << gain_list[i].p_gain << ", i gain: " << gain_list[i].i_gain
               << ", d gain: " << gain_list[i].d_gain << std::endl;
@@ -78,6 +80,11 @@ int main(int argc, char** argv) {
   std::cout << "[" << taregt_joint_name << "] p gain: " << gain.p_gain << ", i gain: " << gain.i_gain
             << ", d gain: " << gain.d_gain << std::endl
             << std::endl;
+  } catch (const std::exception& e) {
+    std::cerr << "Failed to get PID gains: " << e.what() << std::endl;
+    std::cerr << "Note: PID gain retrieval may be unavailable when Control Manager is enabled." << std::endl;
+    return 1;
+  }
 
   return 0;
 }
