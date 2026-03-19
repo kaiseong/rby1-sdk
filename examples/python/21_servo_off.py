@@ -51,7 +51,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--servo",
         type=str,
-        default="^(head).*",
+        default=".*",
         help="Servo name regex pattern (default: '.*')",
     )
     args = parser.parse_args()
