@@ -1,9 +1,22 @@
-import time
+# Servo Off Example
+#
+# This example brings up the robot, disables the control manager after a short delay, and turns off the
+# servo for the specified joints. See --help for arguments.
+# Note: This example uses local helper functions. See helper.py in this file path.
+#
+# Usage example:
+#     python 21_servo_off.py --address 192.168.30.1:50051 --model a --power '.*' --servo '^(head).*'
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
 
-import rby1_sdk as rby
-from helper import *
+import time
+import helper
 import argparse
-import numpy as np
 import logging
 
 logging.basicConfig(
@@ -12,14 +25,14 @@ logging.basicConfig(
 
 
 def main(address, model, power, servo):
-    robot = initialize_robot(address, model, power, servo)
+    robot = helper.initialize_robot(address, model, power, servo)
 
     logging.info(
         "Robot was successfully brought up. The control manager will be disabled and the servo will be turned off in "
         "5 second.")
     time.sleep(5)
-
     robot.disable_control_manager()
+
     robot.servo_off(servo)
 
 

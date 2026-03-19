@@ -1,23 +1,37 @@
-import rby1_sdk
+# Tool Flange State Example
+# This example connects to the robot, powers on the 48V tool flange supply if needed,
+# subscribes to robot state updates, and prints the left and right tool flange states. See --help for arguments.
+# Note: This example is not supported in simulation.
+#
+# Usage example:
+#   python 33_state_tool_flange.py --address 192.168.30.1:50051 --model a
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
+import rby1_sdk as rby
 import time
 import argparse
 
 
 def callback(rs):
     print("---")
-    print(f"{rs.tool_flange_right = }")
-    print(f"{rs.tool_flange_left = }")
+    print(f"tool_flange_right: {rs.tool_flange_right}")
+    print(f"tool_flange_left: {rs.tool_flange_left}")
 
 
 def main(address, model):
-    robot = rby1_sdk.create_robot(address, model)
-    robot.connect()
-    if not robot.is_connected():
+    robot = rby.create_robot(address, model)
+    
+    if not robot.connect():
         print("Robot is not connected")
         exit(1)
-    if not robot.is_power_on('48v'):
-        rv = robot.power_on('48v')
-        if not rv:
+    if not robot.is_power_on("48v"):
+        if not robot.power_on("48v"):
             print("Failed to power on")
             exit(1)
 

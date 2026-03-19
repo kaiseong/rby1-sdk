@@ -1,14 +1,30 @@
-import rby1_sdk.dynamics as rby_dyn
+# Dynamics Modeling Example
+# This example builds a minimal two-link dynamics model, sets a joint angle,
+# computes forward kinematics, and prints the transform from link_0 to link_1. See --help for arguments.
+#
+# Usage example:
+#   python 29_dynamics_modeling.py
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
+import rby1_sdk as rby
 import numpy as np
 
-link_0 = rby_dyn.Link("link_0")
-link_1 = rby_dyn.Link("link_1")
+link_0 = rby.dynamics.Link("link_0")
+link_1 = rby.dynamics.Link("link_1")
 
-joint_0 = rby_dyn.Joint.make_revolute("joint_0", np.identity(4), np.array([0, 0, 1]))
+joint_0 = rby.dynamics.Joint.make_revolute(
+    "joint_0", np.identity(4), np.array([0, 0, 1])
+)
 joint_0.connect_links(link_0, link_1, np.identity(4), np.identity(4))
 
-dyn_robot = rby_dyn.Robot(
-    rby_dyn.RobotConfiguration(name="sample_robot", base_link=link_0)
+dyn_robot = rby.dynamics.Robot(
+    rby.dynamics.RobotConfiguration(name="sample_robot", base_link=link_0)
 )
 
 dyn_state = dyn_robot.make_state(["link_0", "link_1"], ["joint_0"])

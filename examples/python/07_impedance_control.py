@@ -1,7 +1,8 @@
 # Impedance Control Demo
 # This example demonstrates how to connect to an RB-Y1 robot, set motion parameters,
 # perform an initial joint motion, send a Cartesian command, and then run an impedance
-# control command for the right arm.
+# control command for the right arm. See --help for arguments.
+# Note: This example uses local helper functions. See helper.py in this file path.
 #
 # Usage example:
 #     python 07_impedance_control.py --address 192.168.30.1:50051 --model a --power '.*' --servo '.*'
@@ -13,12 +14,13 @@
 # Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
-import rby1_sdk as rby
 import argparse
-import numpy as np
 import logging
-import sys
-from typing import Any, Iterable
+
+import numpy as np
+import rby1_sdk as rby
+
+import helper
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -38,35 +40,6 @@ class CartesianParams:
     stop_orientation_tracking_error: float = 1e-5
 
 
-def rot_y(angle_rad: float) -> np.ndarray:
-    """Rotation matrix about Y-axis.
-
-    Args:
-        angle_rad: Rotation angle in radians.
-
-    Returns:
-        3x3 rotation numpy array.
-    """
-    c, s = np.cos(angle_rad), np.sin(angle_rad)
-    return np.array([[c, 0.0, s], [0.0, 1.0, 0.0], [-s, 0.0, c]])
-
-
-def make_transform(r: np.ndarray, t: Iterable[float]) -> np.ndarray:
-    """Build a 4x4 homogeneous transform from rotation and translation.
-
-    Args:
-        r: 3x3 rotation matrix.
-        t: Iterable of 3 floats [x, y, z].
-
-    Returns:
-        4x4 homogeneous transform.
-    """
-    T = np.eye(4)
-    T[:3, :3] = r
-    T[:3, 3] = np.asarray(t, dtype=float)
-    return T
-
-
 def example_cartesian_command(robot):
     """Send a multi-target Cartesian command for torso and both arms.
 
@@ -80,9 +53,9 @@ def example_cartesian_command(robot):
     right_angle = -np.pi / 4
     left_angle = -np.pi / 4
 
-    T_torso = make_transform(rot_y(torso_angle), [0.1, 0.0, 1.2])
-    T_right = make_transform(rot_y(right_angle), [0.4, -0.4, 0.0])
-    T_left = make_transform(rot_y(left_angle), [0.4, 0.4, 0.0])
+    T_torso = helper.make_transform(helper.rot_y(torso_angle), [0.1, 0.0, 1.2])
+    T_right = helper.make_transform(helper.rot_y(right_angle), [0.4, -0.4, 0.0])
+    T_left = helper.make_transform(helper.rot_y(left_angle), [0.4, 0.4, 0.0])
 
     params = CartesianParams()
 
@@ -142,7 +115,7 @@ def example_impedance_control_command(robot):
 
     # Desired right arm pose relative to body
     right_angle = -np.pi / 4
-    T_right = make_transform(rot_y(right_angle), [0.4, -0.4, 0.0])
+    T_right = helper.make_transform(helper.rot_y(right_angle), [0.4, -0.4, 0.0])
 
     model_name = robot.model().model_name
     body_link = BODY_LINK_NAME.get(model_name, "link_torso_5")
@@ -178,17 +151,12 @@ def example_impedance_control_command(robot):
 
 
 def main(address, model, power, servo):
-    """Main example flow.
-
+    """
+    Main example flow.
     - Initializes the robot
     - Sets common parameters
     - Executes a joint motion, a Cartesian command, and an impedance command
     """
-    # Lazy import to avoid module-level dependency resolution issues in linters
-    import importlib
-
-    helper = importlib.import_module("helper")
-
     robot = helper.initialize_robot(address, model, power, servo)
 
     robot.set_parameter("default.acceleration_limit_scaling", "0.8")
@@ -204,16 +172,15 @@ def main(address, model, power, servo):
         5,
     ):
         logging.error("Failed to execute initial joint motion (movej)")
-        return 1
+        exit(1)
 
     if not example_cartesian_command(robot):
-        return 1
+        exit(1)
 
     if not example_impedance_control_command(robot):
-        return 1
+        exit(1)
 
     logging.info("All examples finished successfully.")
-    return 0
 
 
 if __name__ == "__main__":
@@ -236,11 +203,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    sys.exit(
-        main(
-            address=args.address,
-            model=args.model,
-            power=args.power,
-            servo=args.servo,
-        )
+    main(
+        address=args.address,
+        model=args.model,
+        power=args.power,
+        servo=args.servo,
     )

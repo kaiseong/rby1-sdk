@@ -1,19 +1,36 @@
-import rby1_sdk
+# Set System Time Example
+#
+# This example includes the following features:
+# 1. Reading the robot's current system time and timezone.
+# 2. Setting the robot system time with an explicit timezone string.
+# 3. Setting the robot system time using a timezone-aware datetime object. See --help for arguments.
+# Note: This example is not supported in simulation.
+#
+# Usage example:
+#     python 15_set_system_time.py --address 192.168.30.1:50051 --model a
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
+import rby1_sdk as rby
 import argparse
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-
 def main(address, model):
-    robot = rby1_sdk.create_robot(address, model)
-    robot.connect()
-    if not robot.is_connected():
+    robot = rby.create_robot(address, model)
+    
+    if not robot.connect():
         print("Failed to connect robot")
         exit(1)
-
-    dt, localtime_string = robot.get_system_time()
-    print(f"Robot System Time: {dt}, {localtime_string}")
+    
+    dt, local_time_string = robot.get_system_time()
+    print(f"Robot System Time: {dt}, {local_time_string}")
 
     print("# Change To TimeZone(EST)")
     print(
