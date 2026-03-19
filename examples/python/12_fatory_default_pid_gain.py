@@ -1,7 +1,8 @@
 # Note: This example does not run in simulation.
 # Factory Default PID Gain Demo
 # This example demonstrates how to set PID gains of the robot to factory default values. See --help for arguments.
-#
+# It is recommended not to use this example.
+
 # Usage example:
 #     python 12_factory_default_pid_gain.py --address 127.0.0.1:50051 --model a
 #
