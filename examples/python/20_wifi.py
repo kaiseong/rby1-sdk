@@ -20,6 +20,7 @@ import sys
 import threading
 
 
+
 def wifi_setup_ui(stdscr, networks):
     curses.curs_set(1)
     selected_idx = 0
