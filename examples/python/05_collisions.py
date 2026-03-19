@@ -1,8 +1,9 @@
 # Collisions Demo
-# This example is part of the RB-Y1 SDK examples. See --help for arguments.
+# This example connects to an RB-Y1 robot, powers on the specified devices,
+# subscribes to state updates, and prints detected collision information. See --help for arguments.
 #
 # Usage example:
-#     python 05_collisions.py --help
+#     python 05_collisions.py --address 192.168.30.1:50051 --model a --power '.*'
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -11,7 +12,7 @@
 # Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
-import rby1_sdk
+import rby1_sdk as rby
 import time
 import argparse
 
@@ -23,11 +24,10 @@ def callback(robot_state):
             print(">>>>> Collision detected!")
         print(collision)
 
-
 def main(address, model, power):
-    robot = rby1_sdk.create_robot(address, model)
-    robot.connect()
-    if not robot.is_connected():
+    robot = rby.create_robot(address, model)
+    
+    if not robot.connect():
         print("Robot is not connected")
         exit(1)
     if not robot.is_power_on(power):
@@ -38,7 +38,7 @@ def main(address, model, power):
 
     robot.start_state_update(callback, rate=10)  # Hz
     try:
-        time.sleep(100)
+        time.sleep(10)
     except KeyboardInterrupt:
         print("Stopping state update...")
     finally:
