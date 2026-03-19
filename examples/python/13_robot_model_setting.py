@@ -3,14 +3,10 @@
 # This example includes the following features:
 # 1. Loading the current robot model (in URDF format) from the robot.
 # 2. Saving a custom robot model to the robot with a specified name.
-# 3. Assigning the robot model name for the robot to use (applied after reboot).
+# 3. Assigning the robot model name for the robot to use (applied after reboot). See --help for arguments.
 #
-# Robot 모델 설정 예제
-#
-# 이 예제에는 아래와 같은 기능을 담고 있습니다.
-# 1. 현재 로봇에서 사용하고 있는 로봇 모델 (URDF 포맷)을 불러옵니다.
-# 2. 사용자 로봇 모델을 로봇에 이름과 함께 저장합니다.
-# 3. 로봇이 사용할 로봇 모델 이름을 지정합니다. (로봇이 재부팅 될 때 반영됩니다.)
+# Usage example:
+#     python 13_robot_model_setting.py --address 192.168.30.1:50051 --model a
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -20,36 +16,43 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 
-import rby1_sdk
+import rby1_sdk as rby
 import argparse
 import xml.etree.ElementTree as ET
 
 
 def main(address, model):
-    robot = rby1_sdk.create_robot(address, model)
-    robot.connect()
-    if not robot.is_connected():
+    robot = rby.create_robot(address, model)
+
+    if not robot.connect():
         print("Failed to connect robot")
         exit(1)
-    model = robot.get_robot_model()
+    robot_model_name = robot.get_robot_model()
+    target_joint_name = "head_1"
+    updated_effort = "500"
 
     print("Current robot model: ")
-    print(model)
+    print(robot_model_name)
 
     # Modify model
-    # 현재 사용하고 있는 모델 중 head_1의 effort 리밋 값을 변경 (예시)
-    model_tree = ET.ElementTree(ET.fromstring(model))
+    model_tree = ET.ElementTree(ET.fromstring(robot_model_name))
     model_root = model_tree.getroot()
+    previous_effort = None
     for joint in model_root.findall("joint"):
-        if joint.get("name") == "head_1":
-            joint.find("limit").set("effort", "500")
+        if joint.get("name") == target_joint_name:
+            limit = joint.find("limit")
+            previous_effort = limit.get("effort")
+            limit.set("effort", updated_effort)
+            break
+
+    print(f"Previous {target_joint_name} effort limit: {previous_effort}")
+    print(f"Updated {target_joint_name} effort limit: {updated_effort}")
 
     # Upload model and save model with name 'temp'
-    print(robot.import_robot_model("temp", ET.tostring(model_root).decode()))
-
-    # Set robot model
-    robot.set_parameter("model_name", '"temp"')
-
+    if robot.import_robot_model("temp", ET.tostring(model_root).decode()):   
+        set_model_result = robot.set_parameter("model_name", '"temp"')
+        print(f"Set model_name result: {set_model_result}")
+    
     # After reboot, the robot will use uploaded robot model
 
 

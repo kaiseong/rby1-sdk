@@ -1,12 +1,26 @@
+# Fault Log Example
+#
+# This example connects to the robot, prints the available fault log files, and downloads the first fault
+# log as ``fault.csv`` when one is available. See --help for arguments.
+#
+# Usage example:
+#     python 25_fault_log.py --address 192.168.30.1:50051 --model a
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
 import rby1_sdk as rby
 import argparse
 
 
 def main(address, model):
     robot = rby.create_robot(address, model)
-    robot.connect()
 
-    if not robot.is_connected():
+    if not robot.connect():
         print("Error: Robot connection failed.")
         exit(1)
 
