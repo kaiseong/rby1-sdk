@@ -14,24 +14,35 @@ set(EXAMPLES
 
         log
         reset_odometry
-        power_command
 
-        get_robot_state
+        # Even-numbered Python example counterparts (02–28)
+        02_power_command
+        04_get_robot_state
+        06_stop_command
+        08_zero_pose
+        10_get_pid_gain
+        12_fatory_default_pid_gain
+        14_led
+        16_battery_config
+        18_check_firmware_version
+        20_wifi
+        22_demo_motion
+        24_serial_communication
+        26_joint_group_command
+        28_real_time_control_command
+        30_dynamics_robot
+        32_log_stream
+
         get_robot_state2
         gravity_compensation
         # self_collision_checking
-        demo_motion
-        real_time_control_command
 
         mobility_command
 
         rtcomm_protocol
-        stop_command
 
         break_test
-        get_pid_gain
         set_pid_gain
-        fatory_default_pid_gain
 
         demo_motion_with_master_arm
 )
