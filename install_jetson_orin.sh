@@ -10,6 +10,6 @@ fi
 $SUDO apt-get update
 $SUDO apt-get install -y   git   build-essential   cmake   python3-pip   pkg-config
 
-python3 -m pip install --user --upgrade pip conan
+/usr/bin/python3 -m pip install --user --upgrade pip conan
 
 echo "Jetson build prerequisites installed."
