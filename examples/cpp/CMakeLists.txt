@@ -26,7 +26,7 @@ set(EXAMPLES
         16_battery_config
         18_check_firmware_version
         20_wifi
-        22_demo_motion
+        22_joint_impedance_control
         24_serial_communication
         26_joint_group_command
         28_real_time_control_command

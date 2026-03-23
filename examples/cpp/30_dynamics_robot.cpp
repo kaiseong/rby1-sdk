@@ -30,16 +30,12 @@ using namespace rb;
 #define M_PI 3.14159265358979323846
 #endif
 
-int main(int argc, char** argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address>" << std::endl;
-    return 1;
-  }
-
+template <typename T>
+int run(int argc, char** argv) {
   std::string address{argv[1]};
 
   // 1. Connect to the robot and get its model information.
-  auto robot = Robot<y1_model::A>::Create(address);
+  auto robot = Robot<T>::Create(address);
 
   if (!robot->Connect()) {
     std::cerr << "Failed to connect to the robot." << std::endl;
@@ -51,10 +47,10 @@ int main(int argc, char** argv) {
 
   // 3. Create a State object for dynamics calculations.
   //    Specify the names of the links and joints to be used.
-  constexpr size_t DOF = y1_model::A::kRobotDOF;
+  constexpr size_t DOF = T::kRobotDOF;
   std::vector<std::string> link_names = {"base", "ee_right"};
-  std::vector<std::string> joint_names(y1_model::A::kRobotJointNames.begin(),
-                                       y1_model::A::kRobotJointNames.end());
+  std::vector<std::string> joint_names(T::kRobotJointNames.begin(),
+                                       T::kRobotJointNames.end());
 
   auto dyn_state = dyn_robot->MakeState(link_names, joint_names);
 
@@ -88,4 +84,14 @@ int main(int argc, char** argv) {
   std::cout << dyn_state->GetTau().transpose().format(fmt) << std::endl;
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m]" << std::endl;
+    return 1;
+  }
+  std::string model = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? argv[2] : "m";
+  if (model == "a") return run<y1_model::A>(argc, argv);
+  return run<y1_model::M>(argc, argv);
 }

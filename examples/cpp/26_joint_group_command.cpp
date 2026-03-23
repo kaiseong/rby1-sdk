@@ -32,19 +32,15 @@ using namespace std::chrono_literals;
 
 const std::string kAll = ".*";
 
-int main(int argc, char** argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address> [servo]" << std::endl;
-    return 1;
-  }
-
+template <typename T>
+int run(int argc, char** argv, int extra_start) {
   std::string address{argv[1]};
   std::string servo = kAll;
-  if (argc >= 3) {
-    servo = argv[2];
+  if (argc > extra_start) {
+    servo = argv[extra_start];
   }
 
-  auto robot = Robot<y1_model::A>::Create(address);
+  auto robot = Robot<T>::Create(address);
 
   std::cout << "Attempting to connect to the robot..." << std::endl;
   if (!robot->Connect()) {
@@ -113,4 +109,19 @@ int main(int argc, char** argv) {
 
   std::cout << "Joint group command completed successfully." << std::endl;
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m] [servo]" << std::endl;
+    return 1;
+  }
+  int extra_start = 2;
+  std::string model = "m";
+  if (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) {
+    model = argv[2];
+    extra_start = 3;
+  }
+  if (model == "a") return run<y1_model::A>(argc, argv, extra_start);
+  return run<y1_model::M>(argc, argv, extra_start);
 }

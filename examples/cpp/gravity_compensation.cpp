@@ -11,16 +11,12 @@ using namespace std::chrono_literals;
 
 const std::string kAll = ".*";
 
-int main(int argc, char** argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address>" << std::endl;
-    return 1;
-  }
-
+template <typename T>
+int run(int argc, char** argv) {
   std::string address{argv[1]};
   std::cout << "Initializing robot at address: " << address << std::endl;
 
-  auto robot = Robot<y1_model::A>::Create(address);
+  auto robot = Robot<T>::Create(address);
 
   std::cout << "Attempting to connect to the robot..." << std::endl;
   if (!robot->Connect()) {
@@ -170,4 +166,14 @@ int main(int argc, char** argv) {
   std::cout << sum / 1000. << std::endl;
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m]" << std::endl;
+    return 1;
+  }
+  std::string model = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? argv[2] : "m";
+  if (model == "a") return run<y1_model::A>(argc, argv);
+  return run<y1_model::M>(argc, argv);
 }
