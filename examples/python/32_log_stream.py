@@ -34,7 +34,7 @@ def main(address, model):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="31_log")
+    parser = argparse.ArgumentParser(description="32_log_stream")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
     parser.add_argument(
         "--model", type=str, default="a", help="Robot Model Name (default: 'a')"
