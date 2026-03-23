@@ -29,24 +29,20 @@
 
 using namespace rb;
 
-int main(int argc, char** argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address> [device_path] [baudrate]" << std::endl;
-    return 1;
-  }
-
+template <typename T>
+int run(int argc, char** argv, int extra_start) {
   std::string address{argv[1]};
   std::string device_path = "/dev/ttyUSB1";
   int baudrate = 19200;
 
-  if (argc >= 3) {
-    device_path = argv[2];
+  if (argc > extra_start) {
+    device_path = argv[extra_start];
   }
-  if (argc >= 4) {
-    baudrate = std::stoi(argv[3]);
+  if (argc > extra_start + 1) {
+    baudrate = std::stoi(argv[extra_start + 1]);
   }
 
-  auto robot = Robot<y1_model::A>::Create(address);
+  auto robot = Robot<T>::Create(address);
 
   if (!robot->Connect()) {
     std::cerr << "Error: Robot connection failed." << std::endl;
@@ -118,4 +114,19 @@ int main(int argc, char** argv) {
   std::cout << "Disconnected. Exiting." << std::endl;
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m] [device_path] [baudrate]" << std::endl;
+    return 1;
+  }
+  int extra_start = 2;
+  std::string model = "m";
+  if (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) {
+    model = argv[2];
+    extra_start = 3;
+  }
+  if (model == "a") return run<y1_model::A>(argc, argv, extra_start);
+  return run<y1_model::M>(argc, argv, extra_start);
 }

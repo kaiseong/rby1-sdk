@@ -764,7 +764,10 @@ void control_loop_for_gripper(dynamixel::PortHandler* portHandler, dynamixel::Pa
   }
 }
 
-int main(int argc, char** argv) {
+template <typename T>
+int run(int argc, char** argv) {
+  int extra_start = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? 3 : 2;
+
   try {
     // Latency timer setting
     upc::InitializeDevice(upc::kGripperDeviceName);
@@ -774,19 +777,14 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address> [servo]" << std::endl;
-    return 1;
-  }
-
   std::string address{argv[1]};
   std::string servo = ".*";  // 기본값
 
-  if (argc >= 3) {
-    servo = argv[2];
+  if (argc >= extra_start + 1) {
+    servo = argv[extra_start];
   }
 
-  auto robot = rb::Robot<y1_model::A>::Create(address);
+  auto robot = rb::Robot<T>::Create(address);
 
   std::cout << "Attempting to connect to the robot..." << std::endl;
   if (!robot->Connect()) {
@@ -1000,7 +998,7 @@ int main(int argc, char** argv) {
     }
 
     auto dyn = robot->GetDynamics();
-    auto dyn_state = dyn->MakeState({"base"}, y1_model::A::kRobotJointNames);
+    auto dyn_state = dyn->MakeState({"base"}, T::kRobotJointNames);
 
     Eigen::Vector<double, 14> q_lower_limit, q_upper_limit;
     q_upper_limit = dyn->GetLimitQUpper(dyn_state).block(2 + 6, 0, 14, 1);
@@ -1110,4 +1108,14 @@ int main(int argc, char** argv) {
   portHandler_gripper->closePort();
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m] [servo]" << std::endl;
+    return 1;
+  }
+  std::string model = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? argv[2] : "m";
+  if (model == "a") return run<y1_model::A>(argc, argv);
+  return run<y1_model::M>(argc, argv);
 }
