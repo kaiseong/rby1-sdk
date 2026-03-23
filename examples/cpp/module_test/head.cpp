@@ -12,15 +12,11 @@ using namespace std::chrono_literals;
 const std::string kAll = "^((?!wheel|torso|left|right).)*";
 static constexpr int kDOF = 2;
 
-int main(int argc, char** argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address>" << std::endl;
-    return 1;
-  }
-
+template <typename T>
+int run(int argc, char** argv) {
   std::string address{argv[1]};
 
-  auto robot = Robot<y1_model::A>::Create(address);
+  auto robot = Robot<T>::Create(address);
 
   std::cout << "Attempting to connect to the robot..." << std::endl;
   if (!robot->Connect()) {
@@ -150,4 +146,14 @@ int main(int argc, char** argv) {
   }
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m]" << std::endl;
+    return 1;
+  }
+  std::string model = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? argv[2] : "m";
+  if (model == "a") return run<y1_model::A>(argc, argv);
+  return run<y1_model::M>(argc, argv);
 }

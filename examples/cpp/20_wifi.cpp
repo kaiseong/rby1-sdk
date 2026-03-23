@@ -37,16 +37,12 @@ void print_usage(const char* prog) {
   std::cerr << "  " << prog << " <address> disconnect" << std::endl;
 }
 
-int main(int argc, char** argv) {
-  if (argc < 3) {
-    print_usage(argv[0]);
-    return 1;
-  }
-
+template <typename T>
+int run(int argc, char** argv, int extra_start) {
   std::string address{argv[1]};
-  std::string command{argv[2]};
+  std::string command{argv[extra_start]};
 
-  auto robot = Robot<y1_model::A>::Create(address);
+  auto robot = Robot<T>::Create(address);
 
   if (!robot->Connect()) {
     std::cerr << "Failed to connect robot" << std::endl;
@@ -62,20 +58,20 @@ int main(int argc, char** argv) {
     }
 
   } else if (command == "connect") {
-    if (argc < 4) {
+    if (argc < extra_start + 2) {
       std::cerr << "Error: SSID is required for connect command." << std::endl;
       print_usage(argv[0]);
       return 1;
     }
 
-    std::string ssid{argv[3]};
+    std::string ssid{argv[extra_start + 1]};
     std::string password;
     bool use_dhcp = true;
     std::string ip_address;
     std::string gateway;
     std::vector<std::string> dns;
 
-    int i = 4;
+    int i = extra_start + 2;
     // First non-flag argument after ssid is password
     if (i < argc && std::string(argv[i]).substr(0, 2) != "--") {
       password = argv[i++];
@@ -127,4 +123,23 @@ int main(int argc, char** argv) {
   }
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 3) {
+    print_usage(argv[0]);
+    return 1;
+  }
+  int extra_start = 2;
+  std::string model = "m";
+  if (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) {
+    model = argv[2];
+    extra_start = 3;
+    if (argc < 4) {
+      print_usage(argv[0]);
+      return 1;
+    }
+  }
+  if (model == "a") return run<y1_model::A>(argc, argv, extra_start);
+  return run<y1_model::M>(argc, argv, extra_start);
 }

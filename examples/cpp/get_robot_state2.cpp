@@ -7,25 +7,21 @@
 using namespace rb;
 using namespace std::chrono_literals;
 
-int main(int argc, char** argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address>" << std::endl;
-    return 1;
-  }
-
+template <typename T>
+int run(int argc, char** argv) {
   std::string address{argv[1]};
-  auto robot = Robot<y1_model::A>::Create(address);
+  auto robot = Robot<T>::Create(address);
 
   if (!robot->Connect()) {
     std::cerr << "Connection failed" << std::endl;
     return 1;
   }
 
-  std::vector<Eigen::Matrix<double, y1_model::A::kRobotDOF, 1>> q_joint_vector;
+  std::vector<Eigen::Matrix<double, T::kRobotDOF, 1>> q_joint_vector;
   char userInput;
 
   while (true) {
-    Eigen::Matrix<double, y1_model::A::kRobotDOF, 1> q_joint;
+    Eigen::Matrix<double, T::kRobotDOF, 1> q_joint;
 
     std::cout << "Matrix added. Press 'q' to quit and save, or any other key to add another matrix: ";
     std::cin >> userInput;
@@ -63,4 +59,14 @@ int main(int argc, char** argv) {
   std::cout << "finish!" << std::endl;
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m]" << std::endl;
+    return 1;
+  }
+  std::string model = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? argv[2] : "m";
+  if (model == "a") return run<y1_model::A>(argc, argv);
+  return run<y1_model::M>(argc, argv);
 }
