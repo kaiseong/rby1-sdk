@@ -4,6 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+git submodule update --init --recursive
+
 export PATH="$HOME/.local/bin:$PATH"
 
 if ! command -v conan >/dev/null 2>&1; then
