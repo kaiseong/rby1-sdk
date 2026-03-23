@@ -10,26 +10,22 @@
 using namespace rb;
 using namespace std::chrono_literals;
 
-auto robot = Robot<y1_model::A>::Create("192.168.30.1:50051");
-auto master_arm = std::make_shared<upc::MasterArm>("/dev/rby1_master_arm");
+std::shared_ptr<upc::MasterArm> master_arm = std::make_shared<upc::MasterArm>("/dev/rby1_master_arm");
+std::function<void()> g_robot_power_off;
 
 void signalHandler(int signum) {
 
   master_arm->StopControl();
-  robot->PowerOff("12v");
+  if (g_robot_power_off) g_robot_power_off();
   exit(signum);
 }
 
-int main(int argc, char** argv) {
-
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address>" << std::endl;
-    return 1;
-  }
-
+template <typename T>
+int run(int argc, char** argv) {
   std::string address{argv[1]};
   signal(SIGINT, signalHandler);
-  // auto robot = Robot<y1_model::A>::Create(address);
+  auto robot = Robot<T>::Create(address);
+  g_robot_power_off = [robot]() { robot->PowerOff("12v"); };
 
   std::cout << "Attempting to connect to the robot..." << std::endl;
   if (!robot->Connect()) {
@@ -107,4 +103,14 @@ int main(int argc, char** argv) {
   robot->PowerOff("12v");
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m]" << std::endl;
+    return 1;
+  }
+  std::string model = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? argv[2] : "m";
+  if (model == "a") return run<y1_model::A>(argc, argv);
+  return run<y1_model::M>(argc, argv);
 }
