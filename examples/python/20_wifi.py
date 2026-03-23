@@ -4,6 +4,8 @@
 #
 # Usage example:
 #     python 20_wifi.py --address 127.0.0.1:50051 --model a
+# After changing the IP, please check the OLED on the robot's backpack to confirm.
+# it may take 1–2 minutes for the change to take effect.
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -146,7 +148,7 @@ def connect_wifi_interactive(robot, networks):
 
     print(f"Wait for connecting to {ssid}...")
 
-    success = robot.connect_wifi(
+    robot.connect_wifi(
         ssid=ssid,
         password=password,
         use_dhcp=use_dhcp,
@@ -154,11 +156,7 @@ def connect_wifi_interactive(robot, networks):
         gateway=gateway,
         dns=dns
     )
-
-    if success:
-        print(f"Successfully connected to {ssid}!")
-    else:
-        print(f"Failed to connect to {ssid}. Please try again.")
+    print(f"connected to {ssid}! check oled on the robot's backpack")
 
 
 def loading_animation(event):
