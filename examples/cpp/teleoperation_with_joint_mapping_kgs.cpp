@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <iostream>
 #include <mutex>
+#include <limits>
 #include <thread>
 #include "dynamixel_sdk.h"
 
@@ -638,108 +639,103 @@ void control_loop_for_gripper(dynamixel::PortHandler* portHandler, dynamixel::Pa
                               std::vector<int> activeIDs) {
 
   std::vector<Eigen::Matrix<double, 2, 1>> q_min_max_vector;
-  q_min_max_vector.push_back(Eigen::Matrix<double, 2, 1>::Zero());
-  q_min_max_vector.push_back(Eigen::Matrix<double, 2, 1>::Zero());
-  // q_min_max_vector.push_back((Eigen::Matrix<double, 2, 1>() << 100, -100).finished());
-  // q_min_max_vector.push_back((Eigen::Matrix<double, 2, 1>() << 100, -100).finished());
+  q_min_max_vector.push_back((Eigen::Matrix<double, 2, 1>() << std::numeric_limits<double>::infinity(),
+                              -std::numeric_limits<double>::infinity())
+                                 .finished());
+  q_min_max_vector.push_back((Eigen::Matrix<double, 2, 1>() << std::numeric_limits<double>::infinity(),
+                              -std::numeric_limits<double>::infinity())
+                                 .finished());
 
-  while (!g_shutdown.load()) {
-    static int cnt = 0;
-    int is_init = true;
+  if (activeIDs.size() != 2) {
+    std::cout << "The number of Dynamixels for hand gripper does not match the configuration\n";
+    return;
+  }
 
-    if (activeIDs.size() != 2) {
-      std::cout << "The number of Dynamixels for hand gripper does not match the configuration\n";
-      return;
-    }
+  for (auto const& id : activeIDs) {
+    while (!g_shutdown.load()) {
+      std::optional<int> operation_mode = ReadOperationMode(portHandler, packetHandler, id);
 
-    // total moving angle 540 deg
-
-    for (auto const& id : activeIDs) {
-      while (!g_shutdown.load()) {
-
-        std::optional<int> operation_mode = ReadOperationMode(portHandler, packetHandler, id);
-
-        if (operation_mode.has_value()) {
-          if (operation_mode.value() != CURRENT_CONTROL_MODE) {
-            TorqueEnable(portHandler, packetHandler, id, 0);
-            SendOperationMode(portHandler, packetHandler, id, CURRENT_CONTROL_MODE);
-            TorqueEnable(portHandler, packetHandler, id, 1);
-            std::cout << "try to change control mode, id : " << id << std::endl;
-          } else {
-            break;
-          }
+      if (operation_mode.has_value()) {
+        if (operation_mode.value() != CURRENT_CONTROL_MODE) {
+          TorqueEnable(portHandler, packetHandler, id, 0);
+          SendOperationMode(portHandler, packetHandler, id, CURRENT_CONTROL_MODE);
+          TorqueEnable(portHandler, packetHandler, id, 1);
+          std::cout << "try to change control mode, id : " << id << std::endl;
+        } else {
+          break;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
-
-      if (g_shutdown.load()) {
-        break;
-      }
-
-      while (!g_shutdown.load()) {
-
-        std::optional<int> torque_enable = ReadTorqueEnable(portHandler, packetHandler, id);
-
-        if (torque_enable.has_value()) {
-          if (!torque_enable.value()) {
-            TorqueEnable(portHandler, packetHandler, id, 1);
-            std::cout << "try to enable torque, id : " << id << std::endl;
-          } else {
-            break;
-          }
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      }
-
-      if (g_shutdown.load()) {
-        break;
-      }
-
-      if (cnt % 2 == 0) {
-        std::optional<double> q = ReadEncoder(portHandler, packetHandler, id);
-        if (q.has_value()) {
-          q_min_max_vector[id](cnt % 2) = q.value();
-        }
-        SendCurrent(portHandler, packetHandler, id, 0.5);
-      } else {
-        std::optional<double> q = ReadEncoder(portHandler, packetHandler, id);
-        if (q.has_value()) {
-          q_min_max_vector[id](cnt % 2) = q.value();
-        }
-        SendCurrent(portHandler, packetHandler, id, -0.5);
-      }
-
-      if ((double)(abs(q_min_max_vector[id](MAX_INDEX) - q_min_max_vector[id](MIN_INDEX))) * 180 / 3.141592 <
-          540 * 0.9) {
-        is_init = false;
-      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     if (g_shutdown.load()) {
-      break;
+      return;
     }
 
-    if (is_init) {
-      for (auto const& id : activeIDs) {
-        if (q_min_max_vector[id](MIN_INDEX) > q_min_max_vector[id](MAX_INDEX)) {
-          double temp = q_min_max_vector[id](MIN_INDEX);
-          q_min_max_vector[id](MIN_INDEX) = q_min_max_vector[id](MAX_INDEX);
-          q_min_max_vector[id](MAX_INDEX) = temp;
+    while (!g_shutdown.load()) {
+      std::optional<int> torque_enable = ReadTorqueEnable(portHandler, packetHandler, id);
+
+      if (torque_enable.has_value()) {
+        if (!torque_enable.value()) {
+          TorqueEnable(portHandler, packetHandler, id, 1);
+          std::cout << "try to enable torque, id : " << id << std::endl;
+        } else {
+          break;
         }
-
-        SendCurrent(portHandler, packetHandler, id, 0.5);
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-      break;
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    cnt++;
+    if (g_shutdown.load()) {
+      return;
+    }
+  }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+  int direction = 0;
+  int counter = 0;
+  Eigen::Matrix<double, 2, 1> q = Eigen::Matrix<double, 2, 1>::Zero();
+  Eigen::Matrix<double, 2, 1> prev_q = Eigen::Matrix<double, 2, 1>::Zero();
+
+  while (!g_shutdown.load() && direction < 2) {
+    for (auto const& id : activeIDs) {
+      SendCurrent(portHandler, packetHandler, id, 0.5 * (direction == 0 ? 1.0 : -1.0));
+    }
+
+    std::optional<std::vector<std::pair<int, double>>> q_vector = BulkReadEncoder(portHandler, packetHandler, activeIDs);
+    if (q_vector.has_value()) {
+      for (auto const& ret : q_vector.value()) {
+        q(ret.first) = ret.second;
+      }
+
+      for (auto const& id : activeIDs) {
+        q_min_max_vector[id](MIN_INDEX) = std::min(q_min_max_vector[id](MIN_INDEX), q(id));
+        q_min_max_vector[id](MAX_INDEX) = std::max(q_min_max_vector[id](MAX_INDEX), q(id));
+      }
+
+      if ((prev_q.array() == q.array()).all()) {
+        counter += 1;
+      }
+      prev_q = q;
+
+      if (counter >= 30) {
+        direction += 1;
+        counter = 0;
+      }
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
   if (g_shutdown.load()) {
     return;
+  }
+
+  for (auto const& id : activeIDs) {
+    if (q_min_max_vector[id](MIN_INDEX) > q_min_max_vector[id](MAX_INDEX)) {
+      double temp = q_min_max_vector[id](MIN_INDEX);
+      q_min_max_vector[id](MIN_INDEX) = q_min_max_vector[id](MAX_INDEX);
+      q_min_max_vector[id](MAX_INDEX) = temp;
+    }
   }
 
   std::cout << "finish init\n";
