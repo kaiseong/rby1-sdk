@@ -13,6 +13,10 @@
 # This is a sample code provided for educational and reference purposes only.
 # Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
+#
+# CAUTION:
+# Ensure that the robot has enough surrounding clearance before running this example.
+#
 
 import rby1_sdk as rby
 import numpy as np
