@@ -12,15 +12,11 @@
 using namespace rb;
 using namespace std::chrono_literals;
 
-int main(int argc, char** argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address>" << std::endl;
-    return 1;
-  }
-
+template <typename T>
+int run(int argc, char** argv) {
   std::string address{argv[1]};
 
-  auto robot = Robot<y1_model::A>::Create(address);
+  auto robot = Robot<T>::Create(address);
 
   std::cout << "Attempting to connect to the robot..." << std::endl;
   if (!robot->Connect()) {
@@ -109,13 +105,13 @@ int main(int argc, char** argv) {
   }
 
   auto dyn = robot->GetDynamics();
-  auto dyn_state = dyn->MakeState({"base", "ee_right"}, y1_model::A::kRobotJointNames);
+  auto dyn_state = dyn->MakeState({"base", "ee_right"}, T::kRobotJointNames);
 
   int count = 0;
 
   auto rv = robot->Control(
       [&](const auto& state) {
-        ControlInput<y1_model::A> input;
+        ControlInput<T> input;
 
         {
           auto now = std::chrono::system_clock::now();
@@ -142,9 +138,9 @@ int main(int argc, char** argv) {
         dyn->ComputeForwardKinematics(dyn_state);
 
         // Calculate transformation from base to ee_right
-        const auto& T = dyn->ComputeTransformation(dyn_state, 0, 1);
+        const auto& T_base_to_ee = dyn->ComputeTransformation(dyn_state, 0, 1);
         std::cout << R"(T from "base" to "ee_right": )" << std::endl;
-        std::cout << T << std::endl;
+        std::cout << T_base_to_ee << std::endl;
 
         // Calculate body jacobian from base to ee_right
         const auto& J = dyn->ComputeBodyJacobian(dyn_state, 0, 1);
@@ -167,4 +163,14 @@ int main(int argc, char** argv) {
   std::cout << "Control Result: " << std::boolalpha << rv << std::endl;
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m]" << std::endl;
+    return 1;
+  }
+  std::string model = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? argv[2] : "a";
+  if (model == "a") return run<y1_model::A>(argc, argv);
+  return run<y1_model::M>(argc, argv);
 }
