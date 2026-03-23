@@ -33,13 +33,24 @@ def wifi_setup_ui(stdscr, networks):
 
     while True:
         stdscr.clear()
+        max_y, max_x = stdscr.getmaxyx()
 
         if current_step == "network":
             stdscr.addstr("Select a WiFi network:\n", curses.A_BOLD)
-            for idx, network in enumerate(networks):
-                prefix = "> " if idx == selected_idx else "  "
-                line = f"{prefix}{network.ssid} (Signal: {network.signal_strength}, Secured: {network.secured})\n"
-                if idx == selected_idx:
+            
+            visible_count = max(1, max_y - 2)
+            start_idx = max(0, selected_idx - visible_count // 2)
+            end_idx = min(len(networks), start_idx + visible_count)
+            
+            if end_idx - start_idx < visible_count:
+                start_idx = max(0, end_idx - visible_count)
+                
+            for i in range(start_idx, end_idx):
+                network = networks[i]
+                prefix = "> " if i == selected_idx else "  "
+                line = f"{prefix}{network.ssid} (Signal: {network.signal_strength}, Secured: {network.secured})"
+                line = line[:max_x - 2] + "\n"
+                if i == selected_idx:
                     stdscr.addstr(line, curses.A_REVERSE)
                 else:
                     stdscr.addstr(line)
