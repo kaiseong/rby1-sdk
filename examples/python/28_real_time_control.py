@@ -23,7 +23,6 @@ import numpy as np
 import argparse
 import logging
 import threading
-import gc
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -34,6 +33,8 @@ class RealTimeControl:
     def __init__(self, address, model, power, servo):
         self.robot = helper.initialize_robot(address, model, power, servo)
         self.model = self.robot.model()
+        self.vel_limit = np.array([3.141592] * self.model.robot_dof)
+        self.acc_limit = np.array([3.141592] * self.model.robot_dof)
 
         self.target_position = None
         self.minimum_time = 1
@@ -56,6 +57,7 @@ class RealTimeControl:
                 target=self.robot.control,
                 args=(self.control_m,),
             )
+        
 
     def set_target(self, position, minimum_time=1):
         self.target_position = position
@@ -73,8 +75,8 @@ class RealTimeControl:
             gen_inp.current_position = self.last_target_position
             gen_inp.current_velocity = self.last_target_velocity
             gen_inp.target_position = self.target_position
-            gen_inp.velocity_limit = np.array([5.0] * self.model.robot_dof)
-            gen_inp.acceleration_limit = np.array([5.0] * self.model.robot_dof)
+            gen_inp.velocity_limit = self.vel_limit
+            gen_inp.acceleration_limit = self.acc_limit
             gen_inp.minimum_time = self.minimum_time
             self.generator.update(gen_inp)
             self.local_t = 0.002
@@ -107,8 +109,8 @@ class RealTimeControl:
             gen_inp.current_position = self.last_target_position
             gen_inp.current_velocity = self.last_target_velocity
             gen_inp.target_position = self.target_position
-            gen_inp.velocity_limit = np.array([5.0] * self.model.robot_dof)
-            gen_inp.acceleration_limit = np.array([5.0] * self.model.robot_dof)
+            gen_inp.velocity_limit = self.vel_limit
+            gen_inp.acceleration_limit = self.acc_limit
             gen_inp.minimum_time = self.minimum_time
             self.generator.update(gen_inp)
             self.local_t = 0.002
@@ -130,7 +132,6 @@ class RealTimeControl:
         return i
 
     def start(self):
-        gc.disable()
         self.rt_thread.start()
 
     def wait_for_done(self):
@@ -141,8 +142,6 @@ class RealTimeControl:
             print("\nInterrupted! Stopping control stream gracefully...")
             self.is_running = False
             self.rt_thread.join()
-        finally:
-            gc.enable()
 
 
 def main(address, model, power, servo):
