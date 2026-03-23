@@ -8,6 +8,7 @@ set(EXAMPLES
         velocity_estimation
 
         teleoperation_with_joint_mapping
+        teleoperation_with_joint_mapping_kgs
 
         kinematic_calibration
         kinematic_calibration2
