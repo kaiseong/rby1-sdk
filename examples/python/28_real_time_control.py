@@ -23,6 +23,7 @@ import numpy as np
 import argparse
 import logging
 import threading
+import gc
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -42,6 +43,8 @@ class RealTimeControl:
         self.is_running = True
         self.last_target_position = None
         self.last_target_velocity = None
+
+        self.generator = rby.math.TrapezoidalMotionGenerator()
 
         if model == "a":
             self.rt_thread = threading.Thread(
@@ -66,9 +69,6 @@ class RealTimeControl:
             self.last_target_velocity = state.velocity
 
         if self.target_position is not None:
-            if self.generator is None:
-                self.generator = rby.math.TrapezoidalMotionGenerator()
-
             gen_inp = rby.math.TrapezoidalMotionGenerator.Input()
             gen_inp.current_position = self.last_target_position
             gen_inp.current_velocity = self.last_target_velocity
@@ -103,9 +103,6 @@ class RealTimeControl:
             self.last_target_velocity = state.velocity
 
         if self.target_position is not None:
-            if self.generator is None:
-                self.generator = rby.math.TrapezoidalMotionGenerator()
-
             gen_inp = rby.math.TrapezoidalMotionGenerator.Input()
             gen_inp.current_position = self.last_target_position
             gen_inp.current_velocity = self.last_target_velocity
@@ -133,6 +130,7 @@ class RealTimeControl:
         return i
 
     def start(self):
+        gc.disable()
         self.rt_thread.start()
 
     def wait_for_done(self):
@@ -143,6 +141,8 @@ class RealTimeControl:
             print("\nInterrupted! Stopping control stream gracefully...")
             self.is_running = False
             self.rt_thread.join()
+        finally:
+            gc.enable()
 
 
 def main(address, model, power, servo):
