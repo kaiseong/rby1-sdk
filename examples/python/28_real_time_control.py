@@ -9,7 +9,7 @@
 # - In this example, a separate controller is implemented and used.
 # 1. stream on
 # 2. Move to ready position
-# 3. wait next command
+# 3. wait next command(If you want to close the program, press Ctrl + C.)
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
 # DISCLAIMER:
@@ -39,9 +39,10 @@ class RealTimeControl:
 
         self.local_t = 0.0
         self.generator = None
-        state = self.robot.get_state()
-        self.last_target_position = state.position
-        self.last_target_velocity = state.velocity
+        self.is_running = True
+        self.last_target_position = None
+        self.last_target_velocity = None
+
         if model == "a":
             self.rt_thread = threading.Thread(
                 target=self.robot.control,
@@ -60,6 +61,10 @@ class RealTimeControl:
     def control_a(self, state: rby.Robot_A_ControlState):
         i = rby.Robot_A_ControlInput()
 
+        if self.last_target_position is None:
+            self.last_target_position = state.position
+            self.last_target_velocity = state.velocity
+
         if self.target_position is not None:
             if self.generator is None:
                 self.generator = rby.math.TrapezoidalMotionGenerator()
@@ -84,7 +89,7 @@ class RealTimeControl:
         i.target = self.last_target_position
         i.feedback_gain.fill(10)
         i.feedforward_torque.fill(0)
-        i.finish = False
+        i.finish = not self.is_running
         
         self.local_t += 0.002
 
@@ -93,6 +98,10 @@ class RealTimeControl:
     def control_m(self, state: rby.Robot_M_ControlState):
         i = rby.Robot_M_ControlInput()
 
+        if self.last_target_position is None:
+            self.last_target_position = state.position
+            self.last_target_velocity = state.velocity
+
         if self.target_position is not None:
             if self.generator is None:
                 self.generator = rby.math.TrapezoidalMotionGenerator()
@@ -117,7 +126,7 @@ class RealTimeControl:
         i.target = self.last_target_position
         i.feedback_gain.fill(10)
         i.feedforward_torque.fill(0)
-        i.finish = False
+        i.finish = not self.is_running
         
         self.local_t += 0.002
 
@@ -127,12 +136,19 @@ class RealTimeControl:
         self.rt_thread.start()
 
     def wait_for_done(self):
-        self.rt_thread.join()
+        try:
+            while self.rt_thread.is_alive():
+                self.rt_thread.join(0.1)
+        except KeyboardInterrupt:
+            print("\nInterrupted! Stopping control stream gracefully...")
+            self.is_running = False
+            self.rt_thread.join()
 
 
 def main(address, model, power, servo):
     rt_control = RealTimeControl(address, model, power, servo)
     rt_control.start()
+    robot_minimum_time = 5.0
     if model == "a":
         rt_control.set_target(
             np.deg2rad(
@@ -149,7 +165,7 @@ def main(address, model, power, servo):
                 0.0,0.0,
             ]
         ),
-        minimum_time=2,
+        minimum_time=robot_minimum_time,
     )
     elif model == "m":
         rt_control.set_target(
@@ -160,20 +176,20 @@ def main(address, model, power, servo):
                 # torso
                 0.0,45.0,-90.0,45.0,0.0,0.0,
                 # right arm
-                0.0,-5.0,0.0,-120.0,0.0,70.0,0.0,
+                0.0,-5.0,0.0,-120.0,0.0,50.0,0.0,
                 # left arm
-                0.0,5.0,0.0,-120.0,0.0,70.0,0.0,
+                0.0,5.0,0.0,-120.0,0.0,50.0,0.0,
                 # head
                 0.0,0.0,
             ]
         ),
-        minimum_time=2,
+        minimum_time=robot_minimum_time,
     )
 
     rt_control.wait_for_done()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="26_joint_group_command")
+    parser = argparse.ArgumentParser(description="28_Real Time Control")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
     parser.add_argument(
         "--model", 
