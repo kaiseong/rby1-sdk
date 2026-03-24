@@ -1,9 +1,9 @@
 # Collisions Demo
 # This example connects to an RB-Y1 robot, powers on the specified devices,
-# subscribes to state updates, and prints detected collision information. See --help for arguments.
+# monitors collision distance during motion, and sends a stop command when the robot gets too close. See --help for arguments.
 #
 # Usage example:
-#     python 05_collisions.py --address 192.168.30.1:50051 --model a --power '.*'
+#     python 05_collisions.py --address 192.168.30.1:50051 --model a --power ".*"
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -12,37 +12,120 @@
 # Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
-import rby1_sdk as rby
-import time
 import argparse
+import logging
+import threading
+import time
+
+import numpy as np
+import rby1_sdk as rby
+
+STOP_DISTANCE = 0.03
+RIGHT_ARM_TARGET = np.array(
+    [0.8, -0.8, 0.7, -2.0, 0, 0.0, 0]
+    
+)
+stop_requested = False
 
 
 def callback(robot_state):
-    if robot_state.collisions:
-        collision = robot_state.collisions[0]
-        if collision.distance < 0:
-            print(">>>>> Collision detected!")
-        print(collision)
+    global stop_requested
+    if not robot_state.collisions:
+        return
 
-def main(address, model, power):
+    nearest = min(robot_state.collisions, key=lambda collision: collision.distance)
+    print(
+        f"nearest collision distance: {nearest.distance:.4f} | "
+        f"{nearest.link1} <-> {nearest.link2}"
+    )
+
+    if nearest.distance < STOP_DISTANCE:
+        print(f"Collision Detected")
+        stop_requested = True
+
+def move_to_pre_control_pose(robot):
+    """ Move to Zero Position Before Starting the Motion """
+    torso = np.array([0.0, -0.2, 0.3, -0.0, 0.0, 0.0])
+    right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    rv = robot.send_command(
+        rby.RobotCommandBuilder().set_command(
+            rby.ComponentBasedCommandBuilder().set_body_command(
+                rby.BodyComponentBasedCommandBuilder()
+                .set_torso_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(torso)
+                )
+                .set_right_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(right_arm)
+                )
+                .set_left_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(left_arm)
+                )
+            )
+        ),
+        90,
+    ).get()
+    print(f"pre control pose finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
+        exit(1)
+
+
+def main(address, model, power, servo):
+    global stop_requested
     robot = rby.create_robot(address, model)
-    
     if not robot.connect():
-        print("Robot is not connected")
+        logging.error(f"Failed to connect robot {address}")
         exit(1)
     if not robot.is_power_on(power):
-        rv = robot.power_on(power)
-        if not rv:
-            print("Failed to power on")
+        if not robot.power_on(power):
+            logging.error(f"Failed to turn power ({power}) on")
             exit(1)
+    if not robot.is_servo_on(servo):
+        if not robot.servo_on(servo):
+            logging.error(f"Failed to servo ({servo}) on")
+            exit(1)
+    if robot.get_control_manager_state().state in [
+        rby.ControlManagerState.State.MajorFault,
+        rby.ControlManagerState.State.MinorFault,
+    ]:
+        if not robot.reset_fault_control_manager():
+            logging.error("Failed to reset control manager")
+            exit(1)
+    if not robot.enable_control_manager():
+        logging.error("Failed to enable control manager")
+        exit(1)
 
-    robot.start_state_update(callback, rate=10)  # Hz
-    try:
-        time.sleep(10)
-    except KeyboardInterrupt:
-        print("Stopping state update...")
-    finally:
-        robot.stop_state_update()
+    move_to_pre_control_pose(robot)
+
+    stop_requested = False
+    robot.start_state_update(callback, rate=50)
+
+    rv = robot.send_command(
+        rby.RobotCommandBuilder().set_command(
+            rby.ComponentBasedCommandBuilder().set_body_command(
+                rby.BodyComponentBasedCommandBuilder()
+                .set_right_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(RIGHT_ARM_TARGET)
+                )
+            )
+        ),
+        10,
+    )
+
+    while not stop_requested:
+        time.sleep(0.01)
+
+    
+    robot.cancel_control()
+    robot.stop_state_update()
 
 
 if __name__ == "__main__":
@@ -57,6 +140,12 @@ if __name__ == "__main__":
         default=".*",
         help="Power device name regex pattern (default: '.*')",
     )
+    parser.add_argument(
+        "--servo",
+        type=str,
+        default=".*",
+        help="Servo name regex pattern (default: '.*')",
+    )
     args = parser.parse_args()
 
-    main(address=args.address, model=args.model, power=args.power)
+    main(address=args.address, model=args.model, power=args.power, servo=args.servo)
