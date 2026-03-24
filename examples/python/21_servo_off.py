@@ -15,9 +15,9 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 import time
-import helper
 import argparse
 import logging
+import rby1_sdk as rby
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -25,7 +25,28 @@ logging.basicConfig(
 
 
 def main(address, model, power, servo):
-    robot = helper.initialize_robot(address, model, power, servo)
+    robot = rby.create_robot(address, model)
+    if not robot.connect():
+        logging.error(f"Failed to connect robot {address}")
+        exit(1)
+    if not robot.is_power_on(power):
+        if not robot.power_on(power):
+            logging.error(f"Failed to turn power ({power}) on")
+            exit(1)
+    if not robot.is_servo_on(servo):
+        if not robot.servo_on(servo):
+            logging.error(f"Failed to servo ({servo}) on")
+            exit(1)
+    if robot.get_control_manager_state().state in [
+        rby.ControlManagerState.State.MajorFault,
+        rby.ControlManagerState.State.MinorFault,
+    ]:
+        if not robot.reset_fault_control_manager():
+            logging.error("Failed to reset control manager")
+            exit(1)
+    if not robot.enable_control_manager():
+        logging.error("Failed to enable control manager")
+        exit(1)
 
     logging.info(
         "Robot was successfully brought up. The control manager will be disabled and the servo will be turned off in "
