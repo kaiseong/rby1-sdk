@@ -14,7 +14,6 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 import rby1_sdk as rby
-import helper
 import numpy as np
 import time
 import argparse
@@ -37,10 +36,65 @@ READY_POSE = Pose(
     left_arm=np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
 )
 
+def move_to_pre_control_pose(robot):
+    """ Move to Zero Position Before Starting the Motion """
+    torso = np.array([0.0, -0.2, 0.3, -0.0, 0.0, 0.0])
+    right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    rv = robot.send_command(
+        rby.RobotCommandBuilder().set_command(
+            rby.ComponentBasedCommandBuilder().set_body_command(
+                rby.BodyComponentBasedCommandBuilder()
+                .set_torso_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(torso)
+                )
+                .set_right_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(right_arm)
+                )
+                .set_left_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(left_arm)
+                )
+            )
+        ),
+        90,
+    ).get()
+    print(f"pre control pose finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
+        exit(1)
 
 def main(address, model, power, servo):
-    robot: rby.Robot_A = helper.initialize_robot(address, model, power, servo)
+    robot = rby.create_robot(address, model)
+    if not robot.connect():
+        logging.error(f"Failed to connect robot {address}")
+        exit(1)
+    if not robot.is_power_on(power):
+        if not robot.power_on(power):
+            logging.error(f"Failed to turn power ({power}) on")
+            exit(1)
+    if not robot.is_servo_on(servo):
+        if not robot.servo_on(servo):
+            logging.error(f"Failed to servo ({servo}) on")
+            exit(1)
+    if robot.get_control_manager_state().state in [
+        rby.ControlManagerState.State.MajorFault,
+        rby.ControlManagerState.State.MinorFault,
+    ]:
+        if not robot.reset_fault_control_manager():
+            logging.error(f"Failed to reset control manager")
+            exit(1)
+    if not robot.enable_control_manager():
+        logging.error(f"Failed to enable control manager")
+        exit(1)
+    
     robot_model: rby.Model_A = robot.model()
+    move_to_pre_control_pose(robot)
+
     minimum_time = 2
     robot_handle = robot.send_command(
         rby.RobotCommandBuilder().set_command(

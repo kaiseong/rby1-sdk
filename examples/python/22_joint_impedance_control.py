@@ -15,7 +15,6 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 import rby1_sdk as rby
-import helper
 import argparse
 import numpy as np
 import logging
@@ -31,44 +30,69 @@ READY_POSE = {
     "left_arm": np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
 }
 
+def move_to_pre_control_pose(robot):
+    """ Move to Zero Position Before Starting the Motion """
+    torso = np.array([0.0, -0.2, 0.3, -0.0, 0.0, 0.0])
+    right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    rv = robot.send_command(
+        rby.RobotCommandBuilder().set_command(
+            rby.ComponentBasedCommandBuilder().set_body_command(
+                rby.BodyComponentBasedCommandBuilder()
+                .set_torso_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(torso)
+                )
+                .set_right_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(right_arm)
+                )
+                .set_left_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(left_arm)
+                )
+            )
+        ),
+        90,
+    ).get()
+    print(f"pre control pose finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
+        exit(1)
 
 def main(address, model, power, servo):
-    robot = helper.initialize_robot(address, model, power, servo)
+    robot = rby.create_robot(address, model)
+    if not robot.connect():
+        logging.error(f"Failed to connect robot {address}")
+        exit(1)
+    if not robot.is_power_on(power):
+        if not robot.power_on(power):
+            logging.error(f"Failed to turn power ({power}) on")
+            exit(1)
+    if not robot.is_servo_on(servo):
+        if not robot.servo_on(servo):
+            logging.error(f"Failed to servo ({servo}) on")
+            exit(1)
+    if robot.get_control_manager_state().state in [
+        rby.ControlManagerState.State.MajorFault,
+        rby.ControlManagerState.State.MinorFault,
+    ]:
+        if not robot.reset_fault_control_manager():
+            logging.error(f"Failed to reset control manager")
+            exit(1)
+    if not robot.enable_control_manager():
+        logging.error(f"Failed to enable control manager")
+        exit(1)
 
     model = robot.model()
-    helper.movej(  # Zero Pose
-        robot,
-        np.zeros(len(model.torso_idx)),
-        np.zeros(len(model.right_arm_idx)),
-        np.zeros(len(model.left_arm_idx)),
-        minimum_time=5,
-    )
-    helper.movej(  # Ready Pose
-        robot,
-        READY_POSE["torso"],
-        READY_POSE["right_arm"],
-        READY_POSE["left_arm"],
-        minimum_time=5,
-    )
+    move_to_pre_control_pose(robot)
 
     # Joint Impedance Control
     rc_builder = rby.RobotCommandBuilder().set_command(
         rby.ComponentBasedCommandBuilder().set_body_command(
             rby.BodyComponentBasedCommandBuilder()
-            # -- Torso --
-            # .set_torso_command(
-            #     rby.JointImpedanceControlCommandBuilder()
-            #     .set_command_header(
-            #         rby.CommandHeaderBuilder().set_control_hold_time(10)
-            #     )
-            #     .set_position([0.0] * len(model.torso_idx))
-            #     # .set_velocity_limit([np.inf] * len(model.torso_idx))
-            #     # .set_acceleration_limit([np.inf] * len(model.torso_idx))
-            #     .set_minimum_time(5)
-            #     .set_stiffness([100.0] * len(model.torso_idx))
-            #     .set_damping_ratio(1.0)
-            #     # .set_torque_limit([100] * len(model.torso_idx))
-            # )
             .set_right_arm_command(
                 rby.JointImpedanceControlCommandBuilder()
                 .set_command_header(
@@ -80,20 +104,17 @@ def main(address, model, power, servo):
                 .set_damping_ratio(1.0)
                 .set_torque_limit([10] * len(model.right_arm_idx))
             )
-            # -- Left Arm --
-            # .set_left_arm_command(
-            #     rby.JointImpedanceControlCommandBuilder()
-            #     .set_command_header(
-            #         rby.CommandHeaderBuilder().set_control_hold_time(10)
-            #     )
-            #     .set_position([0.0] * len(model.left_arm_idx))
-            #     # .set_velocity_limit([np.inf] * len(model.torso_idx))
-            #     # .set_acceleration_limit([np.inf] * len(model.torso_idx))
-            #     .set_minimum_time(5)
-            #     .set_stiffness([100.0] * len(model.torso_idx))
-            #     .set_damping_ratio(1.0)
-            #     # .set_torque_limit([100] * len(model.torso_idx))
-            # )
+            .set_left_arm_command(
+                rby.JointImpedanceControlCommandBuilder()
+                .set_command_header(
+                    rby.CommandHeaderBuilder().set_control_hold_time(10)
+                )
+                .set_position([0.0] * len(model.left_arm_idx))
+                .set_minimum_time(5)
+                .set_stiffness([100.0] * len(model.torso_idx))
+                .set_damping_ratio(1.0)
+                .set_torque_limit([10] * len(model.torso_idx))
+            )
         )
     )
     handler = robot.send_command(rc_builder)
