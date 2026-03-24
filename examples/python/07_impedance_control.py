@@ -19,14 +19,13 @@ import logging
 
 import numpy as np
 import rby1_sdk as rby
+from typing import Iterable
 
-import helper
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-BODY_LINK_NAME = {"A": "link_torso_5", "M": "link_torso_5"}
 
 
 class CartesianParams:
@@ -39,6 +38,65 @@ class CartesianParams:
     stop_position_tracking_error: float = 1e-5
     stop_orientation_tracking_error: float = 1e-5
 
+def move_to_pre_control_pose(robot):
+    """ Move to Zero Position Before Starting the Motion """
+    torso = np.array([0.0, -0.2, 0.3, -0.0, 0.0, 0.0])
+    right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    rv = robot.send_command(
+        rby.RobotCommandBuilder().set_command(
+            rby.ComponentBasedCommandBuilder().set_body_command(
+                rby.BodyComponentBasedCommandBuilder()
+                .set_torso_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(torso)
+                )
+                .set_right_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(right_arm)
+                )
+                .set_left_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(left_arm)
+                )
+            )
+        ),
+        90,
+    ).get()
+    print(f"zero pose finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
+        exit(1)
+
+def rot_y(angle_rad: float) -> np.ndarray:
+    """Rotation matrix about Y-axis.
+
+    Args:
+        angle_rad: Rotation angle in radians.
+
+    Returns:
+        3x3 rotation numpy array.
+    """
+    c, s = np.cos(angle_rad), np.sin(angle_rad)
+    return np.array([[c, 0.0, s], [0.0, 1.0, 0.0], [-s, 0.0, c]])
+
+
+def make_transform(r: np.ndarray, t: Iterable[float]) -> np.ndarray:
+    """Build a 4x4 homogeneous transform from rotation and translation.
+
+    Args:
+        r: 3x3 rotation matrix.
+        t: Iterable of 3 floats [x, y, z].
+
+    Returns:
+        4x4 homogeneous transform.
+    """
+    T = np.eye(4)
+    T[:3, :3] = r
+    T[:3, 3] = np.asarray(t, dtype=float)
+    return T
 
 def example_cartesian_command(robot):
     """Send a multi-target Cartesian command for torso and both arms.
@@ -53,15 +111,14 @@ def example_cartesian_command(robot):
     right_angle = -np.pi / 4
     left_angle = -np.pi / 4
 
-    T_torso = helper.make_transform(helper.rot_y(torso_angle), [0.1, 0.0, 1.2])
-    T_right = helper.make_transform(helper.rot_y(right_angle), [0.4, -0.4, 0.0])
-    T_left = helper.make_transform(helper.rot_y(left_angle), [0.4, 0.4, 0.0])
+    T_torso = make_transform(rot_y(torso_angle), [0.1, 0.0, 1.2])
+    T_right = make_transform(rot_y(right_angle), [0.4, -0.4, 0.0])
+    T_left = make_transform(rot_y(left_angle), [0.4, 0.4, 0.0])
 
     params = CartesianParams()
 
     # Resolve base/body link names safely
-    model_name = robot.model().model_name
-    body_link = BODY_LINK_NAME.get(model_name, "link_torso_5")
+    body_link = "link_torso_5"
 
     # Build command
     rc = rby.RobotCommandBuilder().set_command(
@@ -115,10 +172,9 @@ def example_impedance_control_command(robot):
 
     # Desired right arm pose relative to body
     right_angle = -np.pi / 4
-    T_right = helper.make_transform(helper.rot_y(right_angle), [0.4, -0.4, 0.0])
+    T_right = make_transform(rot_y(right_angle), [0.4, -0.4, 0.0])
 
-    model_name = robot.model().model_name
-    body_link = BODY_LINK_NAME.get(model_name, "link_torso_5")
+    body_link = "link_torso_5"
 
     # Build commands
     right_arm_command = (
@@ -157,23 +213,36 @@ def main(address, model, power, servo):
     - Sets common parameters
     - Executes a joint motion, a Cartesian command, and an impedance command
     """
-    robot = helper.initialize_robot(address, model, power, servo)
+    robot = rby.create_robot(address, model)
+    if not robot.connect():
+        logging.error(f"Failed to connect robot {address}")
+        exit(1)
+    if not robot.is_power_on(power):
+        if not robot.power_on(power):
+            logging.error(f"Failed to turn power ({power}) on")
+            exit(1)
+    if not robot.is_servo_on(servo):
+        if not robot.servo_on(servo):
+            logging.error(f"Failed to servo ({servo}) on")
+            exit(1)
+    if robot.get_control_manager_state().state in [
+        rby.ControlManagerState.State.MajorFault,
+        rby.ControlManagerState.State.MinorFault,
+    ]:
+        if not robot.reset_fault_control_manager():
+            logging.error(f"Failed to reset control manager")
+            exit(1)
+    if not robot.enable_control_manager():
+        logging.error(f"Failed to enable control manager")
+        exit(1)
 
     robot.set_parameter("default.acceleration_limit_scaling", "0.8")
     robot.set_parameter("joint_position_command.cutoff_frequency", "5")
     robot.set_parameter("cartesian_command.cutoff_frequency", "5")
     robot.set_parameter("default.linear_acceleration_limit", "5")
 
-    if not helper.movej(
-        robot,
-        np.deg2rad([0, 30, -60, 30, 0, 0]),
-        np.deg2rad([30, -10, 0, -100, 0, 20, 0]),
-        np.deg2rad([30, 10, 0, -100, 0, 20, 0]),
-        5,
-    ):
-        logging.error("Failed to execute initial joint motion (movej)")
-        exit(1)
-
+    
+    move_to_pre_control_pose(robot)
     if not example_cartesian_command(robot):
         exit(1)
 

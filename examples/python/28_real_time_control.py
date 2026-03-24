@@ -30,7 +30,7 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-
+        
 class RealTimeControl:
     def __init__(self, address, model, power, servo):
         self.robot = helper.initialize_robot(address, model, power, servo)
