@@ -1,7 +1,6 @@
 # Multi-Controls Example
 # This example initializes the robot, sends overlapping body and arm joint position
 # commands with different priorities, and prints each command handle's finish code. See --help for arguments.
-# Note: This example uses local helper functions. See helper.py in this file path.
 #
 # Usage example:
 #   python 27_multi_controls.py --address 192.168.30.1:50051 --model a --power '.*' --servo '.*'
@@ -31,7 +30,7 @@ class Pose:
     left_arm: np.typing.NDArray
 
 
-READY_POSE = Pose(
+TARGET_POSE = Pose(
     right_arm=np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
     left_arm=np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
 )
@@ -113,7 +112,7 @@ def main(address, model, power, servo):
             rby.ComponentBasedCommandBuilder().set_body_command(
                 rby.BodyComponentBasedCommandBuilder().set_right_arm_command(
                     rby.JointPositionCommandBuilder()
-                    .set_position(READY_POSE.right_arm)
+                    .set_position(TARGET_POSE.right_arm)
                     .set_minimum_time(minimum_time)
                 )
             )
@@ -127,7 +126,7 @@ def main(address, model, power, servo):
             rby.ComponentBasedCommandBuilder().set_body_command(
                 rby.BodyComponentBasedCommandBuilder().set_left_arm_command(
                     rby.JointPositionCommandBuilder()
-                    .set_position(READY_POSE.left_arm)
+                    .set_position(TARGET_POSE.left_arm)
                     .set_minimum_time(minimum_time)
                 )
             )
