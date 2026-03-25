@@ -19,6 +19,7 @@
 import argparse
 import logging
 import math
+import signal
 import time
 import numpy as np
 import rby1_sdk as rby
@@ -92,6 +93,12 @@ def main(address, model, power, servo):
     
     move_to_zero_pose(robot)
     stream = robot.create_command_stream(10)
+
+    def handler(signum, frame):
+        stream.cancel()
+        exit(1)
+
+    signal.signal(signal.SIGINT, handler)
 
     dt = 0.001
     for t in range(0, 10000):

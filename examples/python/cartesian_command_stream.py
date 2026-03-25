@@ -21,6 +21,7 @@ import rby1_sdk as rby
 import numpy as np
 import logging
 import argparse
+import signal
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -146,6 +147,13 @@ def main(address, model, power, servo):
         return rc
 
     stream = robot.create_command_stream()
+
+    def handler(signum, frame):
+        stream.cancel()
+        exit(1)
+
+    signal.signal(signal.SIGINT, handler)
+
     for pos_diff in [
         [0, 0, -0.08],
         [0, 0, 0.08],
