@@ -44,7 +44,7 @@ def callback(robot_state):
         stop_requested = True
 
 def move_to_pre_control_pose(robot):
-    """ Move to Zero Position Before Starting the Motion """
+    """Move to the pre-control pose before starting the motion."""
     torso = np.array([0.0, 0.1, -0.2, 0.1, 0.0, 0.0])
     right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
     left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
