@@ -1,12 +1,25 @@
-import rby1_sdk
+# Record Demo
+# This example demonstrates how to record the robot's positions. See --help for arguments.
+#
+# Usage example:
+#     python record.py --address 127.0.0.1:50051
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
+import rby1_sdk as rby
 import numpy as np
 import time
 import sys
 import argparse
 import signal
 
-recorded_traj = []  # 데이터를 저장할 리스트
-recording = False  # 녹화 상태를 관리할 변수
+recorded_traj = []  # list for recording
+recording = False  # recording state
 
 
 def cb(state):
@@ -20,7 +33,7 @@ def cb(state):
 
 
 def pre_processing(address):
-    robot = rby1_sdk.create_robot_a(address)
+    robot = rby.create_robot_a(address)
     robot.connect()
 
     if not robot.is_power_on(".*"):
@@ -37,7 +50,7 @@ def pre_processing(address):
 
 def start_recording():
     global recording, recorded_traj
-    recorded_traj = []  # 녹화를 시작할 때 리스트 초기화
+    recorded_traj = []  # initialize list when recording starts
     recording = True
     print("Recording started...")
 
@@ -50,7 +63,7 @@ def stop_recording():
 
 
 def handle_exit(sig, frame):
-    """프로그램 종료 시 호출되는 핸들러"""
+    """handler called when the program exits"""
     stop_recording()
     sys.exit(0)
 
@@ -60,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("--address", type=str, required=True, help="Robot address")
     args = parser.parse_args()
 
-    # 종료 시 호출될 핸들러 등록
+    # register handler called when the program exits
     signal.signal(signal.SIGINT, handle_exit)
     signal.signal(signal.SIGTERM, handle_exit)
 
@@ -74,4 +87,4 @@ if __name__ == "__main__":
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        handle_exit(None, None)  # Ctrl+C로 종료할 때도 파일을 저장하도록 처리
+        handle_exit(None, None)  # save file when Ctrl+C is pressed
