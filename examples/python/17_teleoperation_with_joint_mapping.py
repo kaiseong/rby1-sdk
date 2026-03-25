@@ -47,15 +47,15 @@ class Settings:
     impedance_stiffness = 50
     impedance_damping_ratio = 1.0
     impedance_torque_limit = 30.0
+    startup_align_timeout = 10.0
+    startup_align_tolerance = np.deg2rad(5.0)
 
 
 READY_POSE = Pose(
         torso=np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]),
-        right_arm=np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-        left_arm=np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
+        right_arm=np.deg2rad([0.0, -5.0, 0.0, -20.0, 0.0, 20.0, 0.0]),
+        left_arm=np.deg2rad([0.0, 5.0, 0.0, -20.0, 0.0, 20.0, 0.0]),
     )
-
-
 
 class Gripper:
     """
@@ -112,7 +112,7 @@ class Gripper:
             if np.array_equal(prev_q, q):
                 counter += 1
             prev_q = q.copy()
-            if counter >= 30:
+            if counter >= 15:
                 direction += 1
                 counter = 0
             time.sleep(0.1)
@@ -305,10 +305,14 @@ def main(address, model, power, servo, control_mode):
     ma_max_q = np.deg2rad(
         [360, -10, 90, -60, 90, 80, 360, 360, 30, 0, -60, 90, 80, 360]
     )
-    ma_torque_limit = np.array([3.5, 3.5, 3.5, 1.5, 1.5, 1.5, 1.5] * 2)
+    ma_torque_limit = np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2] * 2)
     ma_viscous_gain = np.array([0.02, 0.02, 0.02, 0.02, 0.01, 0.01, 0.002] * 2)
-    right_q = None
-    left_q = None
+    startup_align_phase = True
+    startup_align_failed = False
+    startup_align_failure_message = ""
+    startup_align_start_time = time.monotonic()
+    right_q = READY_POSE.right_arm.copy()
+    left_q = READY_POSE.left_arm.copy()
     right_minimum_time = 1.0
     left_minimum_time = 1.0
     stream = robot.create_command_stream(priority=1)  # TODO
@@ -320,11 +324,24 @@ def main(address, model, power, servo, control_mode):
             position_mode=position_mode,
         )
     )
+    logging.info("Aligning the master arm to READY_POSE before enabling teleoperation.")
+
+    def cleanup(exit_code=1):
+        robot.stop_state_update()
+        master_arm.stop_control()
+        stream.cancel()
+        robot.cancel_control()
+        time.sleep(0.5)
+        robot.disable_control_manager()
+        robot.power_off("12v")
+        gripper.stop()
+        robot.disconnect()
+        raise SystemExit(exit_code)
 
     log_count = 0
 
     def master_arm_control_loop(state: rby.upc.MasterArm.State):
-        nonlocal position_mode, right_q, left_q, right_minimum_time, left_minimum_time, log_count
+        nonlocal position_mode, right_q, left_q, right_minimum_time, left_minimum_time, log_count, startup_align_phase, startup_align_failed, startup_align_failure_message
 
         if right_q is None:
             right_q = state.q_joint[0:7]
@@ -332,6 +349,35 @@ def main(address, model, power, servo, control_mode):
             left_q = state.q_joint[7:14]
 
         ma_input = rby.upc.MasterArm.ControlInput()
+
+        if startup_align_phase:
+            ma_input.target_operating_mode[0:7].fill(
+                rby.DynamixelBus.CurrentBasedPositionControlMode
+            )
+            ma_input.target_torque[0:7] = ma_torque_limit[0:7]
+            ma_input.target_position[0:7] = READY_POSE.right_arm
+            ma_input.target_operating_mode[7:14].fill(
+                rby.DynamixelBus.CurrentBasedPositionControlMode
+            )
+            ma_input.target_torque[7:14] = ma_torque_limit[7:14]
+            ma_input.target_position[7:14] = READY_POSE.left_arm
+
+            right_error = np.max(np.abs(state.q_joint[0:7] - READY_POSE.right_arm))
+            left_error = np.max(np.abs(state.q_joint[7:14] - READY_POSE.left_arm))
+            if max(right_error, left_error) <= Settings.startup_align_tolerance:
+                startup_align_phase = False
+                right_q = READY_POSE.right_arm.copy()
+                left_q = READY_POSE.left_arm.copy()
+                logging.info("Master arm aligned to READY_POSE. Teleoperation unlocked.")
+            elif (
+                time.monotonic() - startup_align_start_time
+                > Settings.startup_align_timeout
+            ):
+                startup_align_failed = True
+                startup_align_failure_message = (
+                    "Failed to align the master arm to READY_POSE within the startup timeout."
+                )
+            return ma_input
 
         log_count += 1
         if log_count % round(1 / Settings.master_arm_loop_period) == 0:
@@ -486,22 +532,15 @@ def main(address, model, power, servo, control_mode):
 
     # ===== SETUP SIGNAL =====
     def handler(signum, frame):
-        robot.stop_state_update()
-        master_arm.stop_control()
-        stream.cancel()
-        robot.cancel_control()
-        time.sleep(0.5)
-
-        robot.disable_control_manager()
-        robot.power_off("12v")
-        gripper.stop()
-        robot.disconnect()
-        exit(1)
+        cleanup(1)
 
     signal.signal(signal.SIGINT, handler)
 
     while True:
-        time.sleep(1)
+        if startup_align_failed:
+            logging.error(startup_align_failure_message)
+            cleanup(1)
+        time.sleep(0.1)
 
 
 if __name__ == "__main__":
