@@ -1,4 +1,17 @@
-import rby1_sdk
+# Replay Demo
+# This example demonstrates how to replay the robot's positions. See --help for arguments.
+#
+# Usage example:
+#     python replay.py --address 127.0.0.1:50051
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
+import rby1_sdk as rby
 import numpy as np
 import time
 import sys
@@ -6,7 +19,7 @@ import argparse
 
 
 def pre_processing(address):
-    robot = rby1_sdk.create_robot_a(address)
+    robot = rby.create_robot_a(address)
     robot.connect()
 
     if not robot.is_power_on(".*"):
@@ -30,10 +43,10 @@ def pre_processing(address):
     control_manager_state = robot.get_control_manager_state()
 
     if (
-        control_manager_state.state == rby1_sdk.ControlManagerState.State.MinorFault
-        or control_manager_state.state == rby1_sdk.ControlManagerState.State.MajorFault
+        control_manager_state.state == rby.ControlManagerState.State.MinorFault
+        or control_manager_state.state == rby.ControlManagerState.State.MajorFault
     ):
-        if control_manager_state.state == rby1_sdk.ControlManagerState.State.MajorFault:
+        if control_manager_state.state == rby.ControlManagerState.State.MajorFault:
             print("Warning: Detected a Major Fault in the Control Manager.")
         else:
             print("Warning: Detected a Minor Fault in the Control Manager.")
@@ -63,11 +76,11 @@ if __name__ == "__main__":
         # First step: dt = 5, others: dt = 0.1
         dt = 0.1 if i > 0 else 5
         traj_step_body = traj_step[2:-2]
-        rc = rby1_sdk.RobotCommandBuilder().set_command(
-            rby1_sdk.ComponentBasedCommandBuilder().set_body_command(
-                rby1_sdk.JointPositionCommandBuilder()
+        rc = rby.RobotCommandBuilder().set_command(
+            rby.ComponentBasedCommandBuilder().set_body_command(
+                rby.JointPositionCommandBuilder()
                 .set_command_header(
-                    rby1_sdk.CommandHeaderBuilder().set_control_hold_time(1)
+                    rby.CommandHeaderBuilder().set_control_hold_time(1)
                 )
                 .set_minimum_time(dt)
                 .set_position(traj_step_body)
