@@ -41,7 +41,9 @@ def main(address, model, power, joint):
             logging.error(f"Failed to turn power ({power}) on")
             exit(1)
 
+    robot.disable_control_manager()
     time.sleep(0.5)
+
 
     logging.info(f"Brake release requested for {joint}")
     if not robot.break_release(joint):
