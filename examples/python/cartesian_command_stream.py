@@ -89,7 +89,7 @@ def main(address, model, power, servo):
 
     move_to_pre_control_pose(robot)
 
-    model = robot.model()
+    robot_model = robot.model()
 
     rv = robot.send_command(
         rby.RobotCommandBuilder().set_command(
@@ -98,7 +98,7 @@ def main(address, model, power, servo):
                 .set_torso_command(
                     rby.JointPositionCommandBuilder()
                     .set_minimum_time(4.0)
-                    .set_position(None if model.model_name == "UB" else np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]))
+                    .set_position(None if robot_model.model_name == "UB" else np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]))
                 )
                 .set_right_arm_command(
                     rby.JointPositionCommandBuilder()
@@ -119,7 +119,7 @@ def main(address, model, power, servo):
         exit(1)
 
     dyn_robot = robot.get_dynamics()
-    dyn_state = dyn_robot.make_state(["base", "ee_right"], model.robot_joint_names)
+    dyn_state = dyn_robot.make_state(["base", "ee_right"], robot_model.robot_joint_names)
     BASE_LINK_IDX = 0
     EE_RIGHT_LINK_IDX = 1
 
