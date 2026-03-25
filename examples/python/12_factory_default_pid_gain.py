@@ -26,7 +26,7 @@ def main(address, model):
 
     if not robot.is_power_on(".*"):
         rv = robot.power_on(".*")
-        time.sleep(0.5)
+        time.sleep(1)
         if not rv:
             print("Failed to power on")
             exit(1)

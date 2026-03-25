@@ -67,7 +67,7 @@ def main(address, model, power, servo):
         logging.error(f"Failed to connect robot {address}")
         exit(1)
     if not robot.is_power_on(power):
-        if not robot.power_on(power):
+        if not robot.power_on(power): 
             logging.error(f"Failed to turn power ({power}) on")
             exit(1)
     if not robot.is_servo_on(servo):
