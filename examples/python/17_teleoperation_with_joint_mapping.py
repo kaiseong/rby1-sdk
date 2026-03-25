@@ -47,8 +47,9 @@ class Settings:
     impedance_stiffness = 50
     impedance_damping_ratio = 1.0
     impedance_torque_limit = 30.0
-    startup_align_timeout = 10.0
+    startup_align_timeout = 15.0
     startup_align_tolerance = np.deg2rad(5.0)
+    startup_align_command_step = np.deg2rad(0.1)
 
 
 READY_POSE = Pose(
@@ -305,9 +306,10 @@ def main(address, model, power, servo, control_mode):
     ma_max_q = np.deg2rad(
         [360, -10, 90, -60, 90, 80, 360, 360, 30, 0, -60, 90, 80, 360]
     )
-    ma_torque_limit = np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2] * 2)
+    ma_torque_limit = np.array([1.46, 1.46, 1.46, 1.46, 0.6, 0.6, 0.6] * 2)
     ma_viscous_gain = np.array([0.02, 0.02, 0.02, 0.02, 0.01, 0.01, 0.002] * 2)
     startup_align_phase = True
+    startup_align_initialized = False
     startup_align_failed = False
     startup_align_failure_message = ""
     startup_align_start_time = time.monotonic()
@@ -341,7 +343,7 @@ def main(address, model, power, servo, control_mode):
     log_count = 0
 
     def master_arm_control_loop(state: rby.upc.MasterArm.State):
-        nonlocal position_mode, right_q, left_q, right_minimum_time, left_minimum_time, log_count, startup_align_phase, startup_align_failed, startup_align_failure_message
+        nonlocal position_mode, right_q, left_q, right_minimum_time, left_minimum_time, log_count, startup_align_phase, startup_align_initialized, startup_align_failed, startup_align_failure_message
 
         if right_q is None:
             right_q = state.q_joint[0:7]
@@ -351,16 +353,32 @@ def main(address, model, power, servo, control_mode):
         ma_input = rby.upc.MasterArm.ControlInput()
 
         if startup_align_phase:
+            if not startup_align_initialized:
+                right_q = state.q_joint[0:7].copy()
+                left_q = state.q_joint[7:14].copy()
+                startup_align_initialized = True
+
+            right_q += np.clip(
+                READY_POSE.right_arm - right_q,
+                -Settings.startup_align_command_step,
+                Settings.startup_align_command_step,
+            )
+            left_q += np.clip(
+                READY_POSE.left_arm - left_q,
+                -Settings.startup_align_command_step,
+                Settings.startup_align_command_step,
+            )
+
             ma_input.target_operating_mode[0:7].fill(
                 rby.DynamixelBus.CurrentBasedPositionControlMode
             )
             ma_input.target_torque[0:7] = ma_torque_limit[0:7]
-            ma_input.target_position[0:7] = READY_POSE.right_arm
+            ma_input.target_position[0:7] = right_q
             ma_input.target_operating_mode[7:14].fill(
                 rby.DynamixelBus.CurrentBasedPositionControlMode
             )
             ma_input.target_torque[7:14] = ma_torque_limit[7:14]
-            ma_input.target_position[7:14] = READY_POSE.left_arm
+            ma_input.target_position[7:14] = left_q
 
             right_error = np.max(np.abs(state.q_joint[0:7] - READY_POSE.right_arm))
             left_error = np.max(np.abs(state.q_joint[7:14] - READY_POSE.left_arm))
