@@ -1,3 +1,10 @@
+################### CAUTION ###################
+# CAUTION:
+# Ensure that the robot has enough surrounding clearance before running this example.
+###############################################
+
+# pre_control pose, 주석, helper 제거, 
+
 import rby1_sdk as rby
 from helper import *
 import numpy as np
@@ -61,6 +68,7 @@ def main(address, model, power, servo):
                     )
                     .add_joint_position_target("right_arm_2", 0.5, 1, 100)
                     .add_target("base", "ee_right", T, 0.3, 100.0, 0.8)
+                    .set_minimum_time(3)
                 )
             )
         )
