@@ -2,7 +2,6 @@
 # This example demonstrates how to connect to an RB-Y1 robot, set motion parameters,
 # perform an initial joint motion, send a Cartesian command, and then run an impedance
 # control command for the right arm. See --help for arguments.
-# Note: This example uses local helper functions. See helper.py in this file path.
 #
 # Usage example:
 #     python 07_impedance_control.py --address 192.168.30.1:50051 --model a --power '.*' --servo '.*'
@@ -40,7 +39,7 @@ class CartesianParams:
 
 def move_to_pre_control_pose(robot):
     """ Move to Zero Position Before Starting the Motion """
-    torso = np.array([0.0, -0.2, 0.3, -0.0, 0.0, 0.0])
+    torso = np.array([0.0, 0.1, -0.2, 0.1, 0.0, 0.0])
     right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
     left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
     rv = robot.send_command(
@@ -66,7 +65,7 @@ def move_to_pre_control_pose(robot):
         ),
         90,
     ).get()
-    print(f"zero pose finish_code: {rv.finish_code}")
+    print(f"pre control pose finish_code: {rv.finish_code}")
     if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
         exit(1)
 
