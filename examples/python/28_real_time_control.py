@@ -23,8 +23,6 @@ import numpy as np
 import argparse
 import logging
 import threading
-import os
-import gc
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -59,11 +57,6 @@ class RealTimeControl:
                 target=self.robot.control,
                 args=(self.control_m,),
             )
-        # go to zero position
-        torso = np.deg2rad([0.0,0.0,0.0,0.0,0.0,0.0])
-        right_arm = np.deg2rad([0.0,0.0,0.0,0.0,0.0,0.0,0.0])
-        left_arm = np.deg2rad([0.0,0.0,0.0,0.0,0.0,0.0,0.0])
-        helper.movej(self.robot, torso, right_arm, left_arm, 5.0)
         
 
     def set_target(self, position, minimum_time=1):
@@ -139,7 +132,6 @@ class RealTimeControl:
         return i
 
     def start(self):
-        gc.disable()
         self.rt_thread.start()
 
     def wait_for_done(self):
@@ -150,8 +142,6 @@ class RealTimeControl:
             print("\nInterrupted! Stopping control stream gracefully...")
             self.is_running = False
             self.rt_thread.join()
-        finally:
-            gc.enable()
 
 
 def main(address, model, power, servo):
