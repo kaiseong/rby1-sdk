@@ -82,7 +82,7 @@ def main(address, model, power, servo):
 
     minimum_time = 2
 
-    robot.send_command(
+    rv = robot.send_command(
         rby.RobotCommandBuilder().set_command(
             rby.ComponentBasedCommandBuilder().set_body_command(
                 rby.BodyComponentBasedCommandBuilder()
@@ -94,18 +94,21 @@ def main(address, model, power, servo):
                 .set_left_arm_command(
                     rby.JointPositionCommandBuilder()
                     .set_minimum_time(minimum_time)
-                    .set_position(np.zeros(7)) 
+                    .set_position(np.zeros(7))
                 )
                 .set_torso_command(
                     rby.JointGroupPositionCommandBuilder()
-                    .set_joint_names(["torso_0", "torso_1"])
+                    .set_joint_names(["torso_1", "torso_2", "torso_3"])
+                    .set_position(np.array([0.1, -0.2, 0.1]))
                     .set_minimum_time(minimum_time)
-                    .set_position(np.array([0, 0]))
                 )
             )
         ),
         1,
     ).get()
+    print(f"joint group command finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
+        exit(1)
 
 
 if __name__ == "__main__":
