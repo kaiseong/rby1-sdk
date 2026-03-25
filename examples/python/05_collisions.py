@@ -28,6 +28,7 @@ RIGHT_ARM_TARGET = np.array(
 stop_requested = False
 
 
+
 def callback(robot_state):
     global stop_requested
     if not robot_state.collisions:
