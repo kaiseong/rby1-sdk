@@ -13,7 +13,6 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 import rby1_sdk as rby
-import helper
 import numpy as np
 import argparse
 import logging
@@ -22,8 +21,8 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-def move_to_pre_control_pose(robot):
-    """Move to the pre-control pose before starting the motion."""
+def move_to_zero_pose(robot):
+    """ Move to Zero Position Before Starting the Motion """
     torso = np.array([0.0, 0.1, -0.2, 0.1, 0.0, 0.0])
     right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
     left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
@@ -78,8 +77,9 @@ def main(address, model, power, servo):
     if not robot.enable_control_manager():
         logging.error(f"Failed to enable control manager")
         exit(1)
-    move_to_pre_control_pose(robot)
 
+    move_to_zero_pose(robot)
+    
     minimum_time = 2
 
     rv = robot.send_command(
@@ -106,6 +106,10 @@ def main(address, model, power, servo):
         ),
         1,
     ).get()
+    print(f"joint group command finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
+        exit(1)
+
     print(f"joint group command finish_code: {rv.finish_code}")
     if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
         exit(1)
