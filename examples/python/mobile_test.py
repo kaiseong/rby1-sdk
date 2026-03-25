@@ -6,6 +6,9 @@ import argparse
 import re
 from rby1_sdk import *
 
+# Y축은 M 모델만 적용 가능하다는 주석 추가
+
+
 D2R = np.pi / 180  # Degree to Radian conversion factor
 MINIMUM_TIME = 2.5
 LINEAR_VELOCITY_LIMIT = 1.5
@@ -161,8 +164,8 @@ def example_SE2_x_forward_command(robot):
         ComponentBasedCommandBuilder().set_mobility_command(
             SE2VelocityCommandBuilder()
             .set_command_header(CommandHeaderBuilder().set_control_hold_time(1.0))
-            .set_minimum_time(3)
-            .set_velocity([0.2, 0], 0)  # linear velocity[m/s], angualr velocity[rad/s]
+            .set_minimum_time(1)
+            .set_velocity([0.5, 0], 0)  # linear velocity[m/s], angualr velocity[rad/s]
         )
     )
 
@@ -192,8 +195,8 @@ def example_SE2_y_backward_command(robot):
         ComponentBasedCommandBuilder().set_mobility_command(
             SE2VelocityCommandBuilder()
             .set_command_header(CommandHeaderBuilder().set_control_hold_time(1.0))
-            .set_minimum_time(3)
-            .set_velocity([0, -0.2], 0)  # linear velocity[m/s], angualr velocity[rad/s]
+            .set_minimum_time(1)
+            .set_velocity([0, -0.5], 0)  # linear velocity[m/s], angualr velocity[rad/s]
         )
     )
 
@@ -317,7 +320,7 @@ def main(address, model, power_device, servo):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="07_impedance_control")
+    parser = argparse.ArgumentParser(description="0_impedance_control")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
     parser.add_argument(
         "--model", type=str, default="a", help="Robot Model Name (default: 'a')"

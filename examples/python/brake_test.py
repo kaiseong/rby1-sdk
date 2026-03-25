@@ -1,3 +1,8 @@
+################### CAUTION ###################
+# CAUTION:
+# 안전한 자세에서 시작
+###############################################
+
 # Brake Test Example
 # This example connects to the robot, powers it on if needed, releases the brake
 # for a target joint, waits briefly, and then engages the brake again.
@@ -13,9 +18,11 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 import time
-import rby1_sdk as rby
+import rby1_sdk as rby작
 import argparse
 
+# Arm 조인트 하나만
+# Caution
 
 def main(address, joint):
     robot = rby.create_robot_a(address)
