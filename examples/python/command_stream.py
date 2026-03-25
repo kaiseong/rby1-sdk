@@ -42,7 +42,7 @@ for t in range(0, 10000):
                 [0] * 6
                 + [0] * 7
                 + [0] * 6
-                + [math.pi / 2.0 * math.sin(math.pi * 2 * t * dt / 5)]
+                + [math.pi / 4.0 * math.sin(math.pi * 2 * t * dt / 5)]
             )
         )
     )
