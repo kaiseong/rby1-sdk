@@ -57,44 +57,6 @@ def example_ready_command(robot):
     return 0
 
 
-def example_forward_command(robot):
-    print("example_forward_command")
-    rc = rby.RobotCommandBuilder().set_command(
-        rby.ComponentBasedCommandBuilder().set_mobility_command(
-            rby.JointVelocityCommandBuilder()
-            .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
-            .set_minimum_time(MINIMUM_TIME)
-            .set_velocity([np.pi] * 4)  # joint velocity
-        )
-    )
-
-    rv = robot.send_command(rc, 10).get()
-
-    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
-        print("Error: Failed to conduct demo motion.")
-        return 1
-
-    return 0
-
-def example_backward_command(robot):
-    print("example_backward_command")
-    rc = rby.RobotCommandBuilder().set_command(
-        rby.ComponentBasedCommandBuilder().set_mobility_command(
-            rby.JointVelocityCommandBuilder()
-            .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
-            .set_minimum_time(MINIMUM_TIME)
-            .set_velocity([-np.pi] * 4)  # joint velocity
-        )
-    )
-    rv = robot.send_command(rc, 10).get()
-
-    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
-        print("Error: Failed to conduct demo motion.")
-        return 1
-
-    return 0
-
-
 def example_SE2_x_backward_command(robot):
     print("example_SE2_x_backward_command")
     rc = rby.RobotCommandBuilder().set_command(
@@ -102,7 +64,7 @@ def example_SE2_x_backward_command(robot):
             rby.SE2VelocityCommandBuilder()
             .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(MINIMUM_TIME)
-            .set_velocity([-0.2, 0], 0)  # linear velocity[m/s], angualr velocity[rad/s]
+            .set_velocity([-0.1, 0], 0)  # linear velocity[m/s], angualr velocity[rad/s]
         )
     )
 
@@ -123,7 +85,7 @@ def example_SE2_x_forward_command(robot):
             rby.SE2VelocityCommandBuilder()
             .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(MINIMUM_TIME)
-            .set_velocity([0.2, 0], 0)  # linear velocity[m/s], angualr velocity[rad/s]
+            .set_velocity([0.1, 0], 0)  # linear velocity[m/s], angualr velocity[rad/s]
         )
     )
 
@@ -143,7 +105,7 @@ def example_SE2_y_backward_command(robot):
             rby.SE2VelocityCommandBuilder()
             .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(MINIMUM_TIME)
-            .set_velocity([0, -0.2], 0)  # linear velocity[m/s], angualr velocity[rad/s]
+            .set_velocity([0, -0.1], 0)  # linear velocity[m/s], angualr velocity[rad/s]
         )
     )
     rv = robot.send_command(rc, 10).get()
@@ -160,7 +122,7 @@ def example_SE2_y_forward_command(robot):
             rby.SE2VelocityCommandBuilder()
             .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(MINIMUM_TIME)
-            .set_velocity([0, 0.2], 0)  # linear velocity[m/s], angualr velocity[rad/s]
+            .set_velocity([0, 0.1], 0)  # linear velocity[m/s], angualr velocity[rad/s]
         )
     )
     rv = robot.send_command(rc, 10).get()
@@ -177,7 +139,7 @@ def example_SE2_turn_left_command(robot):
             rby.SE2VelocityCommandBuilder()
             .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(MINIMUM_TIME)
-            .set_velocity([0, 0.0], -0.2)  # linear velocity[m/s], angualr velocity[rad/s]
+            .set_velocity([0, 0.0], -0.1)  # linear velocity[m/s], angualr velocity[rad/s]
         )
     )
     rv = robot.send_command(rc, 10).get()
@@ -194,7 +156,7 @@ def example_SE2_turn_right_command(robot):
             rby.SE2VelocityCommandBuilder()
             .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(MINIMUM_TIME)
-            .set_velocity([0, 0.0], 0.2)  # linear velocity[m/s], angualr velocity[rad/s]
+            .set_velocity([0, 0.0], 0.1)  # linear velocity[m/s], angualr velocity[rad/s]
         )
     )
     rv = robot.send_command(rc, 10).get()
@@ -253,12 +215,8 @@ def main(address, model, power, servo):
         sys.exit(1)
     print("Control Manager enabled successfully.")
 
-    if model == "m":
-        example_ready_command(robot)
-        if not example_backward_command(robot):
-            print("Motion completed successfully.")
-        if not example_forward_command(robot):
-            print("Motion completed successfully.")
+    
+    example_ready_command(robot)
 
     if not example_SE2_x_forward_command(robot):
         print("finish motion")
