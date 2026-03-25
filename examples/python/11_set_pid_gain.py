@@ -104,7 +104,7 @@ def main(address, model):
             f"[Before] [{target_joint_name}] P: {original_gain.p_gain}, I: {original_gain.i_gain}, D: {original_gain.d_gain}"
         )
 
-        robot.set_position_pid_gain(target_joint_name, rby1_sdk.PIDGain(700, 0, 3500))
+        robot.set_position_pid_gain(target_joint_name, rby.PIDGain(700, 0, 3500))
         time.sleep(0.05)
         gain = robot.get_position_pid_gain(target_joint_name)
         logging.info(

@@ -1,11 +1,11 @@
 # Joint Impedance Control Demo
-# This example demonstrates how to control the robot's joints using impedance control. See --help for arguments.
+# This example demonstrates how to control the robot's joints using joint impedance control. See --help for arguments.
 # Scenario
-# 1. Move to zero position
-# 2. Move to ready position
-# 3. Move only the right arm to zero position while impedance control
+# 1. Move to the pre-control pose
+# 2. Run joint impedance control for both arms
+# 3. Command both arms toward the zero position with stiffness, damping, and torque limits
 # Usage example:
-#     python 22_joint_impedance_control.py --address 127.0.0.1:50051 --model a
+#     python 22_joint_impedance_control.py --address 127.0.0.1:50051 --model a --power '.*' --servo '.*'
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -24,15 +24,9 @@ logging.basicConfig(
 )
 
 
-READY_POSE = {
-    "torso": np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]),
-    "right_arm": np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-    "left_arm": np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0]),
-}
-
 def move_to_pre_control_pose(robot):
     """ Move to Zero Position Before Starting the Motion """
-    torso = np.array([0.0, -0.2, 0.3, -0.0, 0.0, 0.0])
+    torso = np.array([0.0, 0.1, -0.2, 0.1, 0.0, 0.0])
     right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
     left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
     rv = robot.send_command(
@@ -111,9 +105,9 @@ def main(address, model, power, servo):
                 )
                 .set_position([0.0] * len(model.left_arm_idx))
                 .set_minimum_time(5)
-                .set_stiffness([100.0] * len(model.torso_idx))
+                .set_stiffness([100.0] * len(model.left_arm_idx))
                 .set_damping_ratio(1.0)
-                .set_torque_limit([10] * len(model.torso_idx))
+                .set_torque_limit([10] * len(model.left_arm_idx))
             )
         )
     )
