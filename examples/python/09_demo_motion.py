@@ -1,3 +1,8 @@
+################### CAUTION ###################
+# CAUTION:
+# Ensure that the robot has enough surrounding clearance before running this example.
+###############################################
+
 # Motion Demo
 # This example connects to an RB-Y1 robot, configures the control manager,
 # and runs joint position, Cartesian, impedance, optimal control,
@@ -15,10 +20,7 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 
-################### CAUTION ###################
-# CAUTION:
-# Ensure that the robot has enough surrounding clearance before running this example.
-###############################################
+
 
 import rby1_sdk as rby
 import numpy as np
