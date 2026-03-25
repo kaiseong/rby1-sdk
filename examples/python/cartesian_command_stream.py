@@ -3,7 +3,19 @@
 # Ensure that the robot has enough surrounding clearance before running this example.
 ###############################################
 
-# pre_control pose, 주석, helper 제거, 
+# Cartesian Command Stream Demo
+# This example brings the robot to a pre-control pose, moves to a Cartesian ready pose,
+# and then streams right-arm Cartesian targets while monitoring feedback. See --help for arguments.
+#
+# Usage example:
+#     python cartesian_command_stream.py --address 192.168.30.1:50051 --model a --power '.*' --servo '.*'
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 import rby1_sdk as rby
 import numpy as np
@@ -13,6 +25,38 @@ import argparse
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+def move_to_pre_control_pose(robot):
+    """Move to the pre-control pose before starting the motion."""
+    torso = np.array([0.0, 0.1, -0.2, 0.1, 0.0, 0.0])
+    right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    rv = robot.send_command(
+        rby.RobotCommandBuilder().set_command(
+            rby.ComponentBasedCommandBuilder().set_body_command(
+                rby.BodyComponentBasedCommandBuilder()
+                .set_torso_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(torso)
+                )
+                .set_right_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(right_arm)
+                )
+                .set_left_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(left_arm)
+                )
+            )
+        ),
+        90,
+    ).get()
+    print(f"pre control pose finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
+        exit(1)
 
 
 def main(address, model, power, servo):
@@ -43,10 +87,9 @@ def main(address, model, power, servo):
 
     robot.set_parameter("cartesian_command.cutoff_frequency", "5")
 
+    move_to_pre_control_pose(robot)
+
     model = robot.model()
-    torso_dof = len(model.torso_idx)
-    right_arm_dof = len(model.right_arm_idx)
-    left_arm_dof = len(model.left_arm_idx)
 
     rv = robot.send_command(
         rby.RobotCommandBuilder().set_command(
@@ -54,64 +97,24 @@ def main(address, model, power, servo):
                 rby.BodyComponentBasedCommandBuilder()
                 .set_torso_command(
                     rby.JointPositionCommandBuilder()
-                    .set_minimum_time(3.0)
-                    .set_position(np.zeros(torso_dof))
-                )
-                .set_right_arm_command(
-                    rby.JointPositionCommandBuilder()
-                    .set_minimum_time(3.0)
-                    .set_position(np.zeros(right_arm_dof))
-                )
-                .set_left_arm_command(
-                    rby.JointPositionCommandBuilder()
-                    .set_minimum_time(3.0)
-                    .set_position(np.zeros(left_arm_dof))
-                )
-            )
-        ),
-        90,
-    ).get()
-    print(f"pre control pose finish_code: {rv.finish_code}")
-    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
-        exit(1)
-
-    
-    movej(
-        robot,
-        torso=(
-            None
-            if model.model_name == "UB"
-            else np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0])
-        ),
-        right_arm=np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 40.0, 0.0]),
-        left_arm=np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 40.0, 0.0]),
-        minimum_time=3,
-    )
-
-    rv = robot.send_command(
-        rby.RobotCommandBuilder().set_command(
-            rby.ComponentBasedCommandBuilder().set_body_command(
-                rby.BodyComponentBasedCommandBuilder()
-                .set_torso_command(
-                    rby.JointPositionCommandBuilder()
-                    .set_minimum_time(3.0)
+                    .set_minimum_time(4.0)
                     .set_position(None if model.model_name == "UB" else np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]))
                 )
                 .set_right_arm_command(
                     rby.JointPositionCommandBuilder()
-                    .set_minimum_time(3.0)
+                    .set_minimum_time(4.0)
                     .set_position(np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 40.0, 0.0]))
                 )
                 .set_left_arm_command(
                     rby.JointPositionCommandBuilder()
-                    .set_minimum_time(3.0)
+                    .set_minimum_time(4.0)
                     .set_position(np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 40.0, 0.0]))
                 )
             )
         ),
-        90,
+        10,
     ).get()
-    print(f"pre control pose finish_code: {rv.finish_code}")
+    print(f"ready pose finish_code: {rv.finish_code}")
     if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
         exit(1)
 
@@ -136,7 +139,7 @@ def main(address, model, power, servo):
                     )
                     .add_joint_position_target("right_arm_2", 0.5, 1, 100)
                     .add_target("base", "ee_right", T, 0.3, 100.0, 0.8)
-                    .set_minimum_time(3)
+                    .set_minimum_time(2)
                 )
             )
         )
@@ -190,7 +193,7 @@ def main(address, model, power, servo):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="0_cartesian_command_stream")
+    parser = argparse.ArgumentParser(description="cartesian_command_stream")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
     parser.add_argument(
         "--model", type=str, default="a", help="Robot Model Name (default: 'a')"
