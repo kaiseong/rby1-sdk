@@ -21,8 +21,8 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-def move_to_zero_pose(robot):
-    """ Move to Zero Position Before Starting the Motion """
+def move_to_pre_control_pose(robot):
+    """ Move to Pre Control Position Before Starting the Motion """
     torso = np.array([0.0, 0.1, -0.2, 0.1, 0.0, 0.0])
     right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
     left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
@@ -78,7 +78,7 @@ def main(address, model, power, servo):
         logging.error(f"Failed to enable control manager")
         exit(1)
 
-    move_to_zero_pose(robot)
+    move_to_pre_control_pose(robot)
     
     minimum_time = 2
 
