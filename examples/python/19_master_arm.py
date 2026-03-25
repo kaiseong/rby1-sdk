@@ -37,6 +37,7 @@ def main(address, model):
         exit(1)
 
     def handler(signum, frame):
+        robot.disable_control_manager()
         robot.power_off("12v")
         exit(1)
 

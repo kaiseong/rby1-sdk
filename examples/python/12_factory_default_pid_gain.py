@@ -26,14 +26,15 @@ def main(address, model):
 
     if not robot.is_power_on(".*"):
         rv = robot.power_on(".*")
+        time.sleep(0.5)
         if not rv:
             print("Failed to power on")
             exit(1)
-
     """
     Get PID Gains
     """
     print(">>> Before")
+
     gain_list = robot.get_torso_position_pid_gains()
     [
         print(
