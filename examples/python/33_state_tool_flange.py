@@ -1,7 +1,6 @@
 # Tool Flange State Example
 # This example connects to the robot, powers on the 48V tool flange supply if needed,
 # subscribes to robot state updates, and prints the left and right tool flange states. See --help for arguments.
-# Note: This example is not supported in simulation.
 #
 # Usage example:
 #   python 33_state_tool_flange.py --address 192.168.30.1:50051 --model a
@@ -30,8 +29,8 @@ def main(address, model):
     if not robot.connect():
         print("Robot is not connected")
         exit(1)
-    if not robot.is_power_on("48v"):
-        if not robot.power_on("48v"):
+    if not robot.is_power_on(".*"):
+        if not robot.power_on(".*"):
             print("Failed to power on")
             exit(1)
 

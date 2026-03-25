@@ -23,9 +23,9 @@ logging.basicConfig(
 
 def move_to_zero_pose(robot):
     """ Move to Zero Position Before Starting the Motion """
-    torso = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-    right_arm = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-    left_arm = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    torso = np.array([0.0, 0.1, -0.2, 0.1, 0.0, 0.0])
+    right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
     rv = robot.send_command(
         rby.RobotCommandBuilder().set_command(
             rby.ComponentBasedCommandBuilder().set_body_command(
@@ -94,7 +94,7 @@ def main(address, model, power, servo):
                 .set_left_arm_command(
                     rby.JointPositionCommandBuilder()
                     .set_minimum_time(minimum_time)
-                    .set_position(np.zeros(7)) 
+                    .set_position(np.zeros(7))
                 )
                 .set_torso_command(
                     rby.JointGroupPositionCommandBuilder()
@@ -106,6 +106,9 @@ def main(address, model, power, servo):
         ),
         1,
     ).get()
+    print(f"joint group command finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
+        exit(1)
 
     print(f"joint group command finish_code: {rv.finish_code}")
     if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:

@@ -15,10 +15,7 @@
 
 import rby1_sdk as rby
 import time
-import os
-import sys
 import argparse
-import numpy as np
 
 
 def main(address, model):
@@ -140,7 +137,7 @@ def main(address, model):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="12_fatory_default_pid_gain")
+    parser = argparse.ArgumentParser(description="12_factory_default_pid_gain")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
     parser.add_argument(
         "--model", type=str, default="a", help="Robot Model Name (default: 'a')"
