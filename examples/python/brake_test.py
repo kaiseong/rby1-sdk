@@ -18,11 +18,8 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 import time
-import rby1_sdk as rby작
+import rby1_sdk as rby
 import argparse
-
-# Arm 조인트 하나만
-# Caution
 
 def main(address, joint):
     robot = rby.create_robot_a(address)
