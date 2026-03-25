@@ -1,7 +1,12 @@
+################### CAUTION ###################
+# CAUTION:
+# Ensure that the robot has enough surrounding clearance before running this example.
+###############################################
+
+# pre_control pose, 주석, helper 제거, 
+
 import rby1_sdk as rby
-from helper import *
 import numpy as np
-import time
 import logging
 import argparse
 
@@ -13,7 +18,28 @@ logging.basicConfig(
 def main(address, model, power, servo):
     logging.info("===== Cartesian Command Stream Example =====")
 
-    robot = initialize_robot(address, model, power, servo)
+    robot = rby.create_robot(address, model)
+    if not robot.connect():
+        logging.error(f"Failed to connect robot {address}")
+        exit(1)
+    if not robot.is_power_on(power):
+        if not robot.power_on(power):
+            logging.error(f"Failed to turn power ({power}) on")
+            exit(1)
+    if not robot.is_servo_on(servo):
+        if not robot.servo_on(servo):
+            logging.error(f"Failed to servo ({servo}) on")
+            exit(1)
+    if robot.get_control_manager_state().state in [
+        rby.ControlManagerState.State.MajorFault,
+        rby.ControlManagerState.State.MinorFault,
+    ]:
+        if not robot.reset_fault_control_manager():
+            logging.error(f"Failed to reset control manager")
+            exit(1)
+    if not robot.enable_control_manager():
+        logging.error(f"Failed to enable control manager")
+        exit(1)
 
     robot.set_parameter("cartesian_command.cutoff_frequency", "5")
 
@@ -21,13 +47,35 @@ def main(address, model, power, servo):
     torso_dof = len(model.torso_idx)
     right_arm_dof = len(model.right_arm_idx)
     left_arm_dof = len(model.left_arm_idx)
-    movej(
-        robot,
-        np.zeros(torso_dof),
-        np.zeros(right_arm_dof),
-        np.zeros(left_arm_dof),
-        minimum_time=3,
-    )
+
+    rv = robot.send_command(
+        rby.RobotCommandBuilder().set_command(
+            rby.ComponentBasedCommandBuilder().set_body_command(
+                rby.BodyComponentBasedCommandBuilder()
+                .set_torso_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(3.0)
+                    .set_position(np.zeros(torso_dof))
+                )
+                .set_right_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(3.0)
+                    .set_position(np.zeros(right_arm_dof))
+                )
+                .set_left_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(3.0)
+                    .set_position(np.zeros(left_arm_dof))
+                )
+            )
+        ),
+        90,
+    ).get()
+    print(f"pre control pose finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
+        exit(1)
+
+    
     movej(
         robot,
         torso=(
@@ -39,6 +87,33 @@ def main(address, model, power, servo):
         left_arm=np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 40.0, 0.0]),
         minimum_time=3,
     )
+
+    rv = robot.send_command(
+        rby.RobotCommandBuilder().set_command(
+            rby.ComponentBasedCommandBuilder().set_body_command(
+                rby.BodyComponentBasedCommandBuilder()
+                .set_torso_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(3.0)
+                    .set_position(None if model.model_name == "UB" else np.deg2rad([0.0, 45.0, -90.0, 45.0, 0.0, 0.0]))
+                )
+                .set_right_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(3.0)
+                    .set_position(np.deg2rad([0.0, -5.0, 0.0, -120.0, 0.0, 40.0, 0.0]))
+                )
+                .set_left_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(3.0)
+                    .set_position(np.deg2rad([0.0, 5.0, 0.0, -120.0, 0.0, 40.0, 0.0]))
+                )
+            )
+        ),
+        90,
+    ).get()
+    print(f"pre control pose finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
+        exit(1)
 
     dyn_robot = robot.get_dynamics()
     dyn_state = dyn_robot.make_state(["base", "ee_right"], model.robot_joint_names)
@@ -61,6 +136,7 @@ def main(address, model, power, servo):
                     )
                     .add_joint_position_target("right_arm_2", 0.5, 1, 100)
                     .add_target("base", "ee_right", T, 0.3, 100.0, 0.8)
+                    .set_minimum_time(3)
                 )
             )
         )
@@ -114,7 +190,7 @@ def main(address, model, power, servo):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="07_impedance_control")
+    parser = argparse.ArgumentParser(description="0_cartesian_command_stream")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
     parser.add_argument(
         "--model", type=str, default="a", help="Robot Model Name (default: 'a')"
