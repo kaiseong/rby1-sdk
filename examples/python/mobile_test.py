@@ -1,12 +1,30 @@
-import rby1_sdk
+################### CAUTION ###################
+# CAUTION:
+# Mobile base commands move the robot in the surrounding workspace.
+# Ensure that the floor area is clear before running this example.
+###############################################
+
+# Mobile Command Demo
+# This example brings up the robot and runs several mobility commands using joint velocity and SE(2) velocity control. See --help for arguments.
+#
+# Usage example:
+#     python mobile_test.py --address 192.168.30.1:50051 --model m --power '.*' --servo '.*'
+#
+# Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+#
+# DISCLAIMER:
+# This is a sample code provided for educational and reference purposes only.
+# Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+# the use or misuse of this demo code. Please use with caution and at your own discretion.
+
 import numpy as np
 import sys
 import time
 import argparse
 import re
-from rby1_sdk import *
+import rby1_sdk as rby
 
-# Y축은 M 모델만 적용 가능하다는 주석 추가
+# Note: Y-axis SE(2) commands are supported only on the M model.
 
 
 D2R = np.pi / 180  # Degree to Radian conversion factor
@@ -36,10 +54,10 @@ def example_ready_command(robot):
     q_joint_right_arm = [0, -5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
     q_joint_left_arm = [0, 5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
 
-    rc = RobotCommandBuilder().set_command(
-        ComponentBasedCommandBuilder().set_body_command(
-            JointPositionCommandBuilder()
-            .set_command_header(CommandHeaderBuilder().set_control_hold_time(2))
+    rc = rby.RobotCommandBuilder().set_command(
+        rby.ComponentBasedCommandBuilder().set_body_command(
+            rby.JointPositionCommandBuilder()
+            .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(2))
             .set_minimum_time(7.0)
             .set_position(q_joint_waist + q_joint_right_arm + q_joint_left_arm)
         )
@@ -47,7 +65,7 @@ def example_ready_command(robot):
 
     rv = robot.send_command(rc, 10).get()
 
-    if rv.finish_code != RobotCommandFeedback.FinishCode.Ok:
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
         print("Error: Failed to conduct demo motion.")
         return 1
 
@@ -67,10 +85,10 @@ def example_forward_command(robot):
     q_joint_right_arm = [0, -5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
     q_joint_left_arm = [0, 5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
 
-    rc = RobotCommandBuilder().set_command(
-        ComponentBasedCommandBuilder().set_mobility_command(
-            JointVelocityCommandBuilder()
-            .set_command_header(CommandHeaderBuilder().set_control_hold_time(1.0))
+    rc = rby.RobotCommandBuilder().set_command(
+        rby.ComponentBasedCommandBuilder().set_mobility_command(
+            rby.JointVelocityCommandBuilder()
+            .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(MINIMUM_TIME)
             .set_velocity([np.pi] * 4)  # joint velocity
         )
@@ -78,7 +96,7 @@ def example_forward_command(robot):
 
     rv = robot.send_command(rc, 10).get()
 
-    if rv.finish_code != RobotCommandFeedback.FinishCode.Ok:
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
         print("Error: Failed to conduct demo motion.")
         return 1
 
@@ -98,10 +116,10 @@ def example_backward_command(robot):
     q_joint_right_arm = [0, -5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
     q_joint_left_arm = [0, 5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
 
-    rc = RobotCommandBuilder().set_command(
-        ComponentBasedCommandBuilder().set_mobility_command(
-            JointVelocityCommandBuilder()
-            .set_command_header(CommandHeaderBuilder().set_control_hold_time(1.0))
+    rc = rby.RobotCommandBuilder().set_command(
+        rby.ComponentBasedCommandBuilder().set_mobility_command(
+            rby.JointVelocityCommandBuilder()
+            .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(MINIMUM_TIME)
             .set_velocity([-np.pi] * 4)  # joint velocity
         )
@@ -109,7 +127,7 @@ def example_backward_command(robot):
 
     rv = robot.send_command(rc, 10).get()
 
-    if rv.finish_code != RobotCommandFeedback.FinishCode.Ok:
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
         print("Error: Failed to conduct demo motion.")
         return 1
 
@@ -129,10 +147,10 @@ def example_SE2_x_backward_command(robot):
     q_joint_right_arm = [0, -5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
     q_joint_left_arm = [0, 5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
 
-    rc = RobotCommandBuilder().set_command(
-        ComponentBasedCommandBuilder().set_mobility_command(
-            SE2VelocityCommandBuilder()
-            .set_command_header(CommandHeaderBuilder().set_control_hold_time(1.0))
+    rc = rby.RobotCommandBuilder().set_command(
+        rby.ComponentBasedCommandBuilder().set_mobility_command(
+            rby.SE2VelocityCommandBuilder()
+            .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(3)
             .set_velocity([-0.2, 0], 0)  # linear velocity[m/s], angualr velocity[rad/s]
         )
@@ -140,7 +158,7 @@ def example_SE2_x_backward_command(robot):
 
     rv = robot.send_command(rc, 10).get()
 
-    if rv.finish_code != RobotCommandFeedback.FinishCode.Ok:
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
         print("Error: Failed to conduct demo motion.")
         return 1
 
@@ -160,10 +178,10 @@ def example_SE2_x_forward_command(robot):
     q_joint_right_arm = [0, -5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
     q_joint_left_arm = [0, 5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
 
-    rc = RobotCommandBuilder().set_command(
-        ComponentBasedCommandBuilder().set_mobility_command(
-            SE2VelocityCommandBuilder()
-            .set_command_header(CommandHeaderBuilder().set_control_hold_time(1.0))
+    rc = rby.RobotCommandBuilder().set_command(
+        rby.ComponentBasedCommandBuilder().set_mobility_command(
+            rby.SE2VelocityCommandBuilder()
+            .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(1)
             .set_velocity([0.5, 0], 0)  # linear velocity[m/s], angualr velocity[rad/s]
         )
@@ -171,7 +189,7 @@ def example_SE2_x_forward_command(robot):
 
     rv = robot.send_command(rc, 10).get()
 
-    if rv.finish_code != RobotCommandFeedback.FinishCode.Ok:
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
         print("Error: Failed to conduct demo motion.")
         return 1
 
@@ -191,10 +209,10 @@ def example_SE2_y_backward_command(robot):
     q_joint_right_arm = [0, -5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
     q_joint_left_arm = [0, 5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
 
-    rc = RobotCommandBuilder().set_command(
-        ComponentBasedCommandBuilder().set_mobility_command(
-            SE2VelocityCommandBuilder()
-            .set_command_header(CommandHeaderBuilder().set_control_hold_time(1.0))
+    rc = rby.RobotCommandBuilder().set_command(
+        rby.ComponentBasedCommandBuilder().set_mobility_command(
+            rby.SE2VelocityCommandBuilder()
+            .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(1)
             .set_velocity([0, -0.5], 0)  # linear velocity[m/s], angualr velocity[rad/s]
         )
@@ -202,7 +220,7 @@ def example_SE2_y_backward_command(robot):
 
     rv = robot.send_command(rc, 10).get()
 
-    if rv.finish_code != RobotCommandFeedback.FinishCode.Ok:
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
         print("Error: Failed to conduct demo motion.")
         return 1
 
@@ -222,10 +240,10 @@ def example_SE2_y_forward_command(robot):
     q_joint_right_arm = [0, -5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
     q_joint_left_arm = [0, 5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
 
-    rc = RobotCommandBuilder().set_command(
-        ComponentBasedCommandBuilder().set_mobility_command(
-            SE2VelocityCommandBuilder()
-            .set_command_header(CommandHeaderBuilder().set_control_hold_time(1.0))
+    rc = rby.RobotCommandBuilder().set_command(
+        rby.ComponentBasedCommandBuilder().set_mobility_command(
+            rby.SE2VelocityCommandBuilder()
+            .set_command_header(rby.CommandHeaderBuilder().set_control_hold_time(1.0))
             .set_minimum_time(3)
             .set_velocity([0, 0.2], 0)  # linear velocity[m/s], angualr velocity[rad/s]
         )
@@ -233,16 +251,16 @@ def example_SE2_y_forward_command(robot):
 
     rv = robot.send_command(rc, 10).get()
 
-    if rv.finish_code != RobotCommandFeedback.FinishCode.Ok:
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
         print("Error: Failed to conduct demo motion.")
         return 1
 
     return 0
 
 
-def main(address, model, power_device, servo):
+def main(address, model, power, servo):
     print("Attempting to connect to the robot...")
-    robot = rby1_sdk.create_robot(address, model)
+    robot = rby.create_robot(address, model)
     robot.connect()
 
     if not robot.connect():
@@ -255,8 +273,8 @@ def main(address, model, power_device, servo):
         print("Robot is not connected")
         exit(1)
 
-    if not robot.is_power_on(power_device):
-        rv = robot.power_on(power_device)
+    if not robot.is_power_on(power):
+        rv = robot.power_on(power)
         if not rv:
             print("Failed to power on")
             exit(1)
@@ -270,11 +288,11 @@ def main(address, model, power_device, servo):
     control_manager_state = robot.get_control_manager_state()
 
     if (
-        control_manager_state.state == rby1_sdk.ControlManagerState.State.MinorFault
-        or control_manager_state.state == rby1_sdk.ControlManagerState.State.MajorFault
+        control_manager_state.state == rby.ControlManagerState.State.MinorFault
+        or control_manager_state.state == rby.ControlManagerState.State.MajorFault
     ):
 
-        if control_manager_state.state == rby1_sdk.ControlManagerState.State.MajorFault:
+        if control_manager_state.state == rby.ControlManagerState.State.MajorFault:
             print(
                 "Warning: Detected a Major Fault in the Control Manager!!!!!!!!!!!!!!!."
             )
@@ -320,13 +338,13 @@ def main(address, model, power_device, servo):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="0_impedance_control")
+    parser = argparse.ArgumentParser(description="mobile_test")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
     parser.add_argument(
         "--model", type=str, default="a", help="Robot Model Name (default: 'a')"
     )
     parser.add_argument(
-        "--device",
+        "--power",
         type=str,
         default=".*",
         help="Power device name regex pattern (default: '.*')",
@@ -342,6 +360,6 @@ if __name__ == "__main__":
     main(
         address=args.address,
         model=args.model,
-        power_device=args.device,
+        power=args.power,
         servo=args.servo,
     )
