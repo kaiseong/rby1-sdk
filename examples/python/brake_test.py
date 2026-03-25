@@ -1,14 +1,16 @@
 ################### CAUTION ###################
 # CAUTION:
-# 안전한 자세에서 시작
+# Start from a safe posture before running this example.
+# Do not use torso joints or ".*" with this example.
+# Releasing a brake can cause the target joint to move under gravity.
 ###############################################
 
 # Brake Test Example
-# This example connects to the robot, powers it on if needed, releases the brake
-# for a target joint, waits briefly, and then engages the brake again.
+# This example connects to an RB-Y1 robot, powers on the specified devices if needed,
+# releases the brake for a target joint, waits briefly, and then engages the brake again. See --help for arguments.
 #
 # Usage example:
-#   python brake_test.py --address 192.168.30.1:50051 --joint right_arm_0
+#     python brake_test.py --address 192.168.30.1:50051 --model a --power '.*' --joint right_arm_0
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -17,36 +19,57 @@
 # Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
-import time
-import rby1_sdk as rby
 import argparse
+import logging
+import time
 
-def main(address, joint):
-    robot = rby.create_robot_a(address)
+import rby1_sdk as rby
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+def main(address, model, power, joint):
+    robot = rby.create_robot(address, model)
 
     if not robot.connect():
-        print("Robot is not connected")
+        logging.error(f"Failed to connect robot {address}")
         exit(1)
 
-    if not robot.is_power_on(".*"):
-        if not robot.power_on(".*"):
-            print("Failed to power on")
+    if not robot.is_power_on(power):
+        if not robot.power_on(power):
+            logging.error(f"Failed to turn power ({power}) on")
             exit(1)
 
     time.sleep(0.5)
-    print("Brake Release!")
+
+    logging.info(f"Brake release requested for {joint}")
     if not robot.break_release(joint):
-        print("Error: Failed to brake release.")
+        logging.error(f"Failed to release brake for {joint}")
+        exit(1)
 
     time.sleep(0.5)
-    print("Brake Engage!")
+
+    logging.info(f"Brake engage requested for {joint}")
     if not robot.break_engage(joint):
-        print("Error: Failed to brake engage.")
+        logging.error(f"Failed to engage brake for {joint}")
+        exit(1)
+
+    logging.info("Brake test finished successfully.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="brake_test")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
+    parser.add_argument(
+        "--model", type=str, default="a", help="Robot Model Name (default: 'a')"
+    )
+    parser.add_argument(
+        "--power",
+        type=str,
+        default=".*",
+        help="Power device name regex pattern (default: '.*')",
+    )
     parser.add_argument(
         "--joint", type=str, required=True, help="Joint name regex pattern"
     )
@@ -54,6 +77,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if "torso" in args.joint or args.joint == ".*":
-        print(f"Warning: Using {args.joint} may cause the robot to collapse.")
-    else:
-        main(address=args.address, joint=args.joint)
+        logging.error(
+            f"Refusing to run brake_test with joint pattern {args.joint}. "
+            "Use a single non-torso joint instead."
+        )
+        exit(1)
+
+    main(
+        address=args.address,
+        model=args.model,
+        power=args.power,
+        joint=args.joint,
+    )
