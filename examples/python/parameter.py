@@ -1,6 +1,8 @@
 import rby1_sdk
 
-robot = rby1_sdk.create_robot_a("192.168.30.1:50051")
+# 줄바꿈 추가 및 정리
+
+robot = rby1_sdk.create_robot_a("0.0.0.0:50051")
 
 robot.connect()
 
@@ -16,7 +18,7 @@ print("------------------")
 # Reset
 robot.reset_parameter_to_default(PARAMETER_NAME)
 
-# Get
+# Get리
 print(f"Parameter value after reset")
 print(f"{PARAMETER_NAME}: {robot.get_parameter(PARAMETER_NAME)}")
 print("------------------")
