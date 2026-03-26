@@ -32,8 +32,8 @@ def cb(state):
         recorded_traj.append(current_state)
 
 
-def pre_processing(address):
-    robot = rby.create_robot_a(address)
+def pre_processing(address, model):
+    robot = rby.create_robot(address, model)
     robot.connect()
 
     if not robot.is_power_on(".*"):
@@ -71,13 +71,14 @@ def handle_exit(sig, frame):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Record")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
+    parser.add_argument("--model", type=str, required=True, help="Robot model")
     args = parser.parse_args()
 
     # register handler called when the program exits
     signal.signal(signal.SIGINT, handle_exit)
     signal.signal(signal.SIGTERM, handle_exit)
 
-    robot = pre_processing(args.address)
+    robot = pre_processing(args.address, args.model)
 
     robot.start_state_update(cb, 10)
 
