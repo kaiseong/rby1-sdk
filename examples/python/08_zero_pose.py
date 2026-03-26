@@ -16,7 +16,7 @@ import argparse
 import numpy as np
 import logging
 
-# initialize logger for helper functions
+# initialize logger
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
