@@ -18,8 +18,8 @@ import sys
 import argparse
 
 
-def pre_processing(address):
-    robot = rby.create_robot_a(address)
+def pre_processing(address, model):
+    robot = rby.create_robot(address, model)
     robot.connect()
 
     if not robot.is_power_on(".*"):
@@ -67,15 +67,20 @@ def pre_processing(address):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Replay")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
+    parser.add_argument("--model", type=str, required=True, help="Robot model")
     args = parser.parse_args()
-    robot = pre_processing(args.address)
+    robot = pre_processing(args.address, args.model)
     stream = robot.create_command_stream(10)
+
+    model = robot.model()
+    body_indices = model.torso_idx + model.right_arm_idx + model.left_arm_idx
+    body_joint_names = [model.robot_joint_names[i] for i in body_indices]
 
     saved_traj = np.load("recorded.npz", allow_pickle=True)["data"]
     for i, traj_step in enumerate(saved_traj):
         # First step: dt = 5, others: dt = 0.1
         dt = 0.1 if i > 0 else 5
-        traj_step_body = traj_step[2:-2]
+        traj_step_body = traj_step[body_indices]
         rc = rby.RobotCommandBuilder().set_command(
             rby.ComponentBasedCommandBuilder().set_body_command(
                 rby.JointPositionCommandBuilder()
