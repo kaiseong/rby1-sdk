@@ -15,14 +15,108 @@
 import rby1_sdk as rby
 import time
 import argparse
+import threading
+import numpy as np
 
-
-def main(address, model):
-    robot = rby.create_robot(address, model)
-    if not robot.connect():
-        print("Robot is not connected")
+def move_to_zero_pose(robot):
+    """Move to the zero pose before starting the motion."""
+    torso = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    right_arm = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    left_arm = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    rv = robot.send_command(
+        rby.RobotCommandBuilder().set_command(
+            rby.ComponentBasedCommandBuilder().set_body_command(
+                rby.BodyComponentBasedCommandBuilder()
+                .set_torso_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(3.0)
+                    .set_position(torso)
+                )
+                .set_right_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(3.0)
+                    .set_position(right_arm)
+                )
+                .set_left_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(3.0)
+                    .set_position(left_arm)
+                )
+            )
+        ),
+        90,
+    ).get()
+    print(f"pre control pose finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
         exit(1)
+
+def move_to_pre_control_pose(robot):
+    """Move to the pre-control pose before starting the motion."""
+    torso = np.array([0.0, 0.1, -0.2, 0.1, 0.0, 0.0])
+    right_arm = np.array([0.2, -0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    left_arm = np.array([0.2, 0.2, 0.0, -1.0, 0, 0.7, 0.0])
+    rv = robot.send_command(
+        rby.RobotCommandBuilder().set_command(
+            rby.ComponentBasedCommandBuilder().set_body_command(
+                rby.BodyComponentBasedCommandBuilder()
+                .set_torso_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(torso)
+                )
+                .set_right_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(right_arm)
+                )
+                .set_left_arm_command(
+                    rby.JointPositionCommandBuilder()
+                    .set_minimum_time(5.0)
+                    .set_position(left_arm)
+                )
+            )
+        ),
+        90,
+    ).get()
+    print(f"pre control pose finish_code: {rv.finish_code}")
+    if rv.finish_code != rby.RobotCommandFeedback.FinishCode.Ok:
+        exit(1)
+
+
+def main(address, model, power, servo):
+    robot = rby.create_robot(address, model)
+
+    if not robot.connect():
+        logging.error(f"Failed to connect robot {address}")
+        exit(1)
+    if not robot.is_power_on(power):
+        if not robot.power_on(power):
+            logging.error(f"Failed to turn power ({power}) on")
+            exit(1)
+    if not robot.is_servo_on(servo):
+        if not robot.servo_on(servo):
+            logging.error(f"Failed to servo ({servo}) on")
+            exit(1)
+    if robot.get_control_manager_state().state in [
+        rby.ControlManagerState.State.MajorFault,
+        rby.ControlManagerState.State.MinorFault,
+    ]:
+        if not robot.reset_fault_control_manager():
+            logging.error(f"Failed to reset control manager")
+            exit(1)
+    if not robot.enable_control_manager():
+        logging.error(f"Failed to enable control manager")
+        exit(1)
+
+    move_to_zero_pose(robot)
+
+    thread = threading.Thread(target=move_to_pre_control_pose, args=(robot,))
+    thread.start()
+    print("move start. minimum time 5 seconds...")
+    time.sleep(2)
+    print("cancel control")
     robot.cancel_control()
+    thread.join()
 
 
 if __name__ == "__main__":
@@ -31,7 +125,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model", type=str, default="a", help="Robot Model Name (default: 'a')"
     )
+    parser.add_argument(
+        "--power", type=str, default=".*", help="Robot Power On (default: '.*')"
+    )
+    parser.add_argument(
+        "--servo", type=str, default=".*", help="Robot Servo On (default: '.*')"
+    )
     args = parser.parse_args()
 
-    main(address=args.address, model=args.model)
+    main(address=args.address, model=args.model, power=args.power, servo=args.servo)
 
