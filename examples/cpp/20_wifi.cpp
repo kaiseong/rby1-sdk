@@ -1,12 +1,11 @@
 // Note: This example does not run in simulation.
 // WiFi Setup Demo
 // This example demonstrates how to setup the robot's WiFi connection.
+// After changing the IP, please check the OLED on the robot's backpack to confirm.
+// It may take 1-2 minutes for the change to take effect.
 //
-// Usage:
-//     ./example_wifi <server address> scan
-//     ./example_wifi <server address> connect <ssid> [password] [--no-dhcp --ip <ip> --gateway <gw> --dns <dns>]
-//     ./example_wifi <server address> status
-//     ./example_wifi <server address> disconnect
+// Usage example:
+//   ./example_20_wifi --address 127.0.0.1:50051 --model a
 //
 // Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 //
@@ -15,131 +14,160 @@
 // Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
 // the use or misuse of this demo code. Please use with caution and at your own discretion.
 
-#if __INTELLISENSE__
-#undef __ARM_NEON
-#undef __ARM_NEON__
-#endif
-
+#include <algorithm>
+#include <cctype>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
+
 #include "rby1-sdk/model.h"
 #include "rby1-sdk/robot.h"
 
 using namespace rb;
 
-void print_usage(const char* prog) {
-  std::cerr << "Usage:" << std::endl;
-  std::cerr << "  " << prog << " <address> scan" << std::endl;
-  std::cerr << "  " << prog << " <address> connect <ssid> [password] [--no-dhcp --ip <ip> --gateway <gw> --dns <dns>]"
-            << std::endl;
-  std::cerr << "  " << prog << " <address> status" << std::endl;
-  std::cerr << "  " << prog << " <address> disconnect" << std::endl;
+namespace {
+
+std::string ToLower(std::string v) {
+  std::transform(v.begin(), v.end(), v.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return v;
 }
 
-template <typename T>
-int run(int argc, char** argv, int extra_start) {
-  std::string address{argv[1]};
-  std::string command{argv[extra_start]};
+void PrintUsage(const char* prog) {
+  std::cerr << "Usage: " << prog << " --address <server address> [--model a|m|ub]" << std::endl;
+  std::cerr << "   or: " << prog << " <server address> [model]" << std::endl;
+}
 
-  auto robot = Robot<T>::Create(address);
+template <typename ModelT>
+int Run(const std::string& address) {
+  auto robot = Robot<ModelT>::Create(address);
 
-  if (!robot->Connect()) {
-    std::cerr << "Failed to connect robot" << std::endl;
+  robot->Connect();
+  if (!robot->IsConnected()) {
+    std::cerr << "Robot is not connected" << std::endl;
     return 1;
   }
 
-  if (command == "scan") {
-    auto networks = robot->ScanWifi();
-    std::cout << "Found " << networks.size() << " network(s):" << std::endl;
-    for (size_t i = 0; i < networks.size(); ++i) {
-      std::cout << "  [" << i << "] " << networks[i].ssid << " (Signal: " << networks[i].signal_strength
-                << ", Secured: " << (networks[i].secured ? "Yes" : "No") << ")" << std::endl;
-    }
+  // 1. Scan WiFi networks
+  std::cout << "Scanning Wi-Fi..." << std::endl;
+  auto wifi_networks = robot->ScanWifi();
+  std::cout << "Scanning completed!" << std::endl;
 
-  } else if (command == "connect") {
-    if (argc < extra_start + 2) {
-      std::cerr << "Error: SSID is required for connect command." << std::endl;
-      print_usage(argv[0]);
-      return 1;
-    }
-
-    std::string ssid{argv[extra_start + 1]};
-    std::string password;
-    bool use_dhcp = true;
-    std::string ip_address;
-    std::string gateway;
-    std::vector<std::string> dns;
-
-    int i = extra_start + 2;
-    // First non-flag argument after ssid is password
-    if (i < argc && std::string(argv[i]).substr(0, 2) != "--") {
-      password = argv[i++];
-    }
-
-    while (i < argc) {
-      std::string arg{argv[i]};
-      if (arg == "--no-dhcp") {
-        use_dhcp = false;
-      } else if (arg == "--ip" && i + 1 < argc) {
-        ip_address = argv[++i];
-      } else if (arg == "--gateway" && i + 1 < argc) {
-        gateway = argv[++i];
-      } else if (arg == "--dns" && i + 1 < argc) {
-        dns.push_back(argv[++i]);
-      }
-      ++i;
-    }
-
-    std::cout << "Connecting to WiFi: " << ssid << std::endl;
-    bool rv = robot->ConnectWifi(ssid, password, use_dhcp, ip_address, gateway, dns);
-    std::cout << (rv ? "SUCCESS" : "FAIL") << std::endl;
-
-  } else if (command == "status") {
-    auto status = robot->GetWifiStatus();
-    if (status.has_value()) {
-      std::cout << "WiFi Status:" << std::endl;
-      std::cout << "  SSID:      " << status->ssid << std::endl;
-      std::cout << "  Connected: " << (status->connected ? "Yes" : "No") << std::endl;
-      std::cout << "  IP:        " << status->ip_address << std::endl;
-      std::cout << "  Gateway:   " << status->gateway << std::endl;
-      std::cout << "  DNS:       ";
-      for (const auto& d : status->dns) {
-        std::cout << d << " ";
-      }
-      std::cout << std::endl;
-    } else {
-      std::cout << "No WiFi status available." << std::endl;
-    }
-
-  } else if (command == "disconnect") {
-    bool rv = robot->DisconnectWifi();
-    std::cout << (rv ? "SUCCESS" : "FAIL") << std::endl;
-
-  } else {
-    std::cerr << "Unknown command: " << command << std::endl;
-    print_usage(argv[0]);
+  if (wifi_networks.empty()) {
+    std::cout << "No WiFi networks found." << std::endl;
     return 1;
   }
+
+  // 2. Display available networks (same as Python)
+  std::cout << "\nAvailable Wi-Fi networks:" << std::endl;
+  for (size_t i = 0; i < wifi_networks.size(); ++i) {
+    std::cout << "  " << (i + 1) << ". " << wifi_networks[i].ssid
+              << " (Signal: " << wifi_networks[i].signal_strength
+              << ", Secured: " << (wifi_networks[i].secured ? "Yes" : "No") << ")" << std::endl;
+  }
+
+  // 3. Select a network
+  std::cout << "\nSelect a WiFi network (number): ";
+  int selection = 0;
+  std::cin >> selection;
+  std::cin.ignore();
+
+  if (selection < 1 || selection > static_cast<int>(wifi_networks.size())) {
+    std::cerr << "Invalid selection." << std::endl;
+    return 1;
+  }
+  const auto& selected = wifi_networks[selection - 1];
+  std::cout << "Selected: " << selected.ssid << std::endl;
+
+  // 4. Enter password if secured
+  std::string password;
+  if (selected.secured) {
+    std::cout << "Enter password: ";
+    std::getline(std::cin, password);
+  }
+
+  // 5. DHCP setting
+  std::cout << "Use DHCP? (y/n): ";
+  std::string dhcp_input;
+  std::getline(std::cin, dhcp_input);
+  bool use_dhcp = (ToLower(dhcp_input) == "y");
+
+  std::string ip_address, gateway;
+  std::vector<std::string> dns;
+
+  if (!use_dhcp) {
+    std::cout << "Enter IP address: ";
+    std::getline(std::cin, ip_address);
+
+    std::cout << "Enter Gateway: ";
+    std::getline(std::cin, gateway);
+
+    std::cout << "Enter DNS (comma separated): ";
+    std::string dns_input;
+    std::getline(std::cin, dns_input);
+    std::istringstream iss(dns_input);
+    std::string item;
+    while (std::getline(iss, item, ',')) {
+      // Trim whitespace
+      auto start = item.find_first_not_of(' ');
+      auto end = item.find_last_not_of(' ');
+      if (start != std::string::npos) {
+        dns.push_back(item.substr(start, end - start + 1));
+      }
+    }
+  }
+
+  // 6. Connect
+  std::cout << "Wait for connecting to " << selected.ssid << "..." << std::endl;
+  robot->ConnectWifi(selected.ssid, password, use_dhcp, ip_address, gateway, dns);
+  std::cout << "Connected to " << selected.ssid << "! Check OLED on the robot's backpack." << std::endl;
 
   return 0;
 }
 
+}  // namespace
+
 int main(int argc, char** argv) {
-  if (argc < 3) {
-    print_usage(argv[0]);
-    return 1;
-  }
-  int extra_start = 2;
-  std::string model = "m";
-  if (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) {
-    model = argv[2];
-    extra_start = 3;
-    if (argc < 4) {
-      print_usage(argv[0]);
+  std::string address;
+  std::string model = "a";
+
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+    if (arg == "--address" && i + 1 < argc) {
+      address = argv[++i];
+    } else if (arg == "--model" && i + 1 < argc) {
+      model = argv[++i];
+    } else if (arg.rfind("--", 0) == 0) {
+      PrintUsage(argv[0]);
+      return 1;
+    } else if (address.empty()) {
+      address = arg;
+    } else if (model == "a") {
+      model = arg;
+    } else {
+      PrintUsage(argv[0]);
       return 1;
     }
   }
-  if (model == "a") return run<y1_model::A>(argc, argv, extra_start);
-  return run<y1_model::M>(argc, argv, extra_start);
+
+  if (address.empty()) {
+    PrintUsage(argv[0]);
+    return 1;
+  }
+
+  model = ToLower(model);
+
+  if (model == "a") {
+    return Run<y1_model::A>(address);
+  }
+  if (model == "m") {
+    return Run<y1_model::M>(address);
+  }
+  if (model == "ub") {
+    return Run<y1_model::UB>(address);
+  }
+
+  std::cerr << "Unknown model: " << model << std::endl;
+  PrintUsage(argv[0]);
+  return 1;
 }

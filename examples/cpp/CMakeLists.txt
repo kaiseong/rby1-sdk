@@ -16,9 +16,10 @@ set(EXAMPLES
         log
         reset_odometry
 
-        # Even-numbered Python example counterparts (02–28)
+        # Even-numbered Python example counterparts (02–32)
         02_power_command
         04_get_robot_state
+        06_cancel_control
         06_stop_command
         08_zero_pose
         10_get_pid_gain

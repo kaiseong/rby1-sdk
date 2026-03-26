@@ -1,176 +1,318 @@
+// Real Time Control Demo
+// This example demonstrates how to control the robot using real time control.
+//
+// Scenario:
+//   - Real-time control cannot use the builder type commands provided by the existing SDK.
+//   - In this example, a separate controller is implemented and used.
+//   1. Move to zero position
+//   2. Start real-time control
+//   3. Move to target position using TrapezoidalMotionGenerator
+//   4. Wait for done (press Ctrl+C to stop)
+//
+// Usage example:
+//   ./example_28_real_time_control_command --address 127.0.0.1:50051 --model a --power ".*" --servo ".*"
+//
+// Copyright (c) 2025 Rainbow Robotics. All rights reserved.
+//
+// DISCLAIMER:
+// This is a sample code provided for educational and reference purposes only.
+// Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
+// the use or misuse of this demo code. Please use with caution and at your own discretion.
+
+#include <algorithm>
+#include <atomic>
+#include <cctype>
 #include <chrono>
-#include <ctime>
-#include <iomanip>
+#include <cmath>
+#include <csignal>
 #include <iostream>
+#include <mutex>
+#include <string>
 #include <thread>
 
+#include "rby1-sdk/control_manager_state.h"
+#include "rby1-sdk/math/trapezoidal_motion_generator.h"
 #include "rby1-sdk/model.h"
-#include "rby1-sdk/net/real_time_control_protocol.h"
 #include "rby1-sdk/robot.h"
 #include "rby1-sdk/robot_command_builder.h"
 
 using namespace rb;
 using namespace std::chrono_literals;
 
-template <typename T>
-int run(int argc, char** argv) {
-  std::string address{argv[1]};
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
-  auto robot = Robot<T>::Create(address);
+namespace {
 
-  std::cout << "Attempting to connect to the robot..." << std::endl;
+std::atomic<bool> g_stop{false};
+void SignalHandler(int) { g_stop = true; }
+
+std::string ToLower(std::string v) {
+  std::transform(v.begin(), v.end(), v.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return v;
+}
+
+template <typename ModelT>
+std::shared_ptr<Robot<ModelT>> InitializeRobot(const std::string& address, const std::string& power,
+                                               const std::string& servo) {
+  auto robot = Robot<ModelT>::Create(address);
+
   if (!robot->Connect()) {
-    std::cerr << "Error: Unable to establish connection to the robot at " << address << std::endl;
-    return 1;
+    std::cerr << "Failed to connect robot " << address << std::endl;
+    return nullptr;
   }
-  std::cout << "Successfully connected to the robot." << std::endl;
-
-  std::cout << "Checking power status..." << std::endl;
-  if (!robot->IsPowerOn(".*")) {
-    std::cout << "Power is currently OFF. Attempting to power on..." << std::endl;
-    if (!robot->PowerOn(".*")) {
-      std::cerr << "Error: Failed to power on the robot." << std::endl;
-      return 1;
+  if (!robot->IsConnected()) {
+    std::cerr << "Robot is not connected" << std::endl;
+    return nullptr;
+  }
+  if (!robot->IsPowerOn(power)) {
+    if (!robot->PowerOn(power)) {
+      std::cerr << "Failed to turn power (" << power << ") on" << std::endl;
+      return nullptr;
     }
-    std::cout << "Robot powered on successfully." << std::endl;
-  } else {
-    std::cout << "Power is already ON." << std::endl;
   }
-
-  std::cout << "Checking servo status..." << std::endl;
-  if (!robot->IsServoOn("^(?!.*wheel).*")) {
-    std::cout << "Servo is currently OFF. Attempting to activate servo..." << std::endl;
-    if (!robot->ServoOn("^(?!.*wheel).*")) {
-      std::cerr << "Error: Failed to activate servo." << std::endl;
-      return 1;
+  if (!robot->IsServoOn(servo)) {
+    if (!robot->ServoOn(servo)) {
+      std::cerr << "Failed to servo (" << servo << ") on" << std::endl;
+      return nullptr;
     }
-    std::cout << "Servo activated successfully." << std::endl;
-  } else {
-    std::cout << "Servo is already ON." << std::endl;
   }
 
-  const auto& control_manager_state = robot->GetControlManagerState();
-  if (control_manager_state.state == ControlManagerState::State::kMajorFault ||
-      control_manager_state.state == ControlManagerState::State::kMinorFault) {
-    std::cerr << "Warning: Detected a "
-              << (control_manager_state.state == ControlManagerState::State::kMajorFault ? "Major" : "Minor")
-              << " Fault in the Control Manager." << std::endl;
-
-    std::cout << "Attempting to reset the fault..." << std::endl;
+  auto cms = robot->GetControlManagerState();
+  if (cms.state == ControlManagerState::State::kMajorFault || cms.state == ControlManagerState::State::kMinorFault) {
     if (!robot->ResetFaultControlManager()) {
-      std::cerr << "Error: Unable to reset the fault in the Control Manager." << std::endl;
-      return 1;
+      std::cerr << "Failed to reset control manager" << std::endl;
+      return nullptr;
     }
-    std::cout << "Fault reset successfully." << std::endl;
   }
-  std::cout << "Control Manager state is normal. No faults detected." << std::endl;
-
-  std::cout << "Enabling the Control Manager..." << std::endl;
   if (!robot->EnableControlManager()) {
-    std::cerr << "Error: Failed to enable the Control Manager." << std::endl;
-    return 1;
+    std::cerr << "Failed to enable control manager" << std::endl;
+    return nullptr;
   }
-  std::cout << "Control Manager enabled successfully." << std::endl;
 
-  {
-    Eigen::Vector<double, 6> q_joint_waist;
-    Eigen::Vector<double, 7> q_joint_right_arm;
-    Eigen::Vector<double, 7> q_joint_left_arm;
+  return robot;
+}
 
-    q_joint_waist << 0, 30, -60, 30, 0, 0;
-    q_joint_right_arm << -45, -30, 0, -90, 0, 45, 0;
-    q_joint_left_arm << -45, 30, 0, -90, 0, 45, 0;
+template <typename ModelT>
+void MoveToZeroPose(const std::shared_ptr<Robot<ModelT>>& robot) {
+  Eigen::VectorXd torso = Eigen::VectorXd::Zero(ModelT::kTorsoIdx.size());
+  Eigen::VectorXd right_arm = Eigen::VectorXd::Zero(ModelT::kRightArmIdx.size());
+  Eigen::VectorXd left_arm = Eigen::VectorXd::Zero(ModelT::kLeftArmIdx.size());
 
-    Eigen::Vector<double, 20> q;
-    q.block(0, 0, 6, 1) = q_joint_waist;
-    q.block(6, 0, 7, 1) = q_joint_right_arm;
-    q.block(6 + 7, 0, 7, 1) = q_joint_left_arm;
+  auto rv = robot
+                ->SendCommand(RobotCommandBuilder().SetCommand(ComponentBasedCommandBuilder().SetBodyCommand(
+                    BodyComponentBasedCommandBuilder()
+                        .SetTorsoCommand(JointPositionCommandBuilder().SetMinimumTime(5.0).SetPosition(torso))
+                        .SetRightArmCommand(JointPositionCommandBuilder().SetMinimumTime(5.0).SetPosition(right_arm))
+                        .SetLeftArmCommand(JointPositionCommandBuilder().SetMinimumTime(5.0).SetPosition(left_arm)))),
+                              90)
+                ->Get();
+  std::cout << "pre control pose finish_code: " << static_cast<int>(rv.finish_code()) << std::endl;
+  if (rv.finish_code() != RobotCommandFeedback::FinishCode::kOk) {
+    std::exit(1);
+  }
+}
 
-    q = q * 3.141592 / 180.;
+// RealTimeControl class — mirrors the Python RealTimeControl class
+template <typename ModelT>
+class RealTimeControl {
+ public:
+  static constexpr size_t kDOF = ModelT::kRobotDOF;
 
-    JointPositionCommandBuilder joint_position_command;
-    joint_position_command.SetPosition(q).SetMinimumTime(5.0);
-
-    auto rv = robot
-                  ->SendCommand(RobotCommandBuilder().SetCommand(
-                      ComponentBasedCommandBuilder().SetBodyCommand(joint_position_command)))
-                  ->Get();
-
-    if (rv.finish_code() != RobotCommandFeedback::FinishCode::kOk) {
-      std::cerr << "Error: Failed to conduct demo motion." << std::endl;
-      return 1;
+  RealTimeControl(const std::string& address, const std::string& power, const std::string& servo) {
+    robot_ = InitializeRobot<ModelT>(address, power, servo);
+    if (!robot_) {
+      std::exit(1);
     }
 
-    std::this_thread::sleep_for(1s);
+    vel_limit_.setConstant(M_PI);
+    acc_limit_.setConstant(M_PI);
+
+    // Go to zero position
+    MoveToZeroPose(robot_);
   }
 
-  auto dyn = robot->GetDynamics();
-  auto dyn_state = dyn->MakeState({"base", "ee_right"}, T::kRobotJointNames);
+  void SetTarget(const Eigen::Vector<double, kDOF>& position, double minimum_time = 1.0) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    target_position_ = position;
+    minimum_time_ = minimum_time;
+    has_target_ = true;
+  }
 
-  int count = 0;
+  void Start() {
+    rt_thread_ = std::thread([this]() {
+      robot_->Control([this](const ControlState<ModelT>& state) -> ControlInput<ModelT> {
+        return ControlCallback(state);
+      });
+    });
+  }
 
-  auto rv = robot->Control(
-      [&](const auto& state) {
-        ControlInput<T> input;
+  void WaitForDone() {
+    while (rt_thread_.joinable()) {
+      if (g_stop) {
+        std::cout << "\nInterrupted! Stopping control stream gracefully..." << std::endl;
+        is_running_ = false;
+        break;
+      }
+      std::this_thread::sleep_for(100ms);
+    }
+    if (rt_thread_.joinable()) {
+      rt_thread_.join();
+    }
+  }
 
-        {
-          auto now = std::chrono::system_clock::now();
-          auto now_time_t = std::chrono::system_clock::to_time_t(now);
-          auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()) % 1000000;
+ private:
+  ControlInput<ModelT> ControlCallback(const ControlState<ModelT>& state) {
+    ControlInput<ModelT> input;
 
-          std::tm* now_tm = std::localtime(&now_time_t);
+    if (!initialized_) {
+      last_target_position_ = state.position;
+      last_target_velocity_ = state.velocity;
+      initialized_ = true;
+    }
 
-          std::cout << "Current time: ";
-          std::cout << std::put_time(now_tm, "%H:%M:%S");
-          std::cout << "." << std::setfill('0') << std::setw(6) << now_us.count();
-          std::cout << std::endl;
-        }
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (has_target_) {
+        typename TrapezoidalMotionGenerator<kDOF>::Input gen_inp;
+        gen_inp.current_position = last_target_position_;
+        gen_inp.current_velocity = last_target_velocity_;
+        gen_inp.target_position = target_position_;
+        gen_inp.velocity_limit = vel_limit_;
+        gen_inp.acceleration_limit = acc_limit_;
+        gen_inp.minimum_time = minimum_time_;
+        generator_.Update(gen_inp);
+        local_t_ = 0.002;
+        has_target_ = false;
+      }
+    }
 
-        std::cout << "time: " << state.t << std::endl;
-        //        std::cout << "is_ready: " << state.is_ready.transpose() << std::endl;
-        std::cout << "position: " << state.position.transpose() << std::endl;
-        //        std::cout << "velocity: " << state.velocity.transpose() << std::endl;
-        //        std::cout << "current: " << state.current.transpose() << std::endl;
-        //        std::cout << "torque: " << state.torque.transpose() << std::endl;
+    auto out = generator_(local_t_);
+    last_target_position_ = out.position;
+    last_target_velocity_ = out.velocity;
 
-        dyn_state->SetQ(state.position);
+    input.target = last_target_position_;
+    input.feedback_gain.setConstant(10);
+    input.feedforward_torque.setConstant(0);
+    input.finish = !is_running_;
 
-        dyn->ComputeForwardKinematics(dyn_state);
+    local_t_ += 0.002;
+    return input;
+  }
 
-        // Calculate transformation from base to ee_right
-        const auto& T_base_to_ee = dyn->ComputeTransformation(dyn_state, 0, 1);
-        std::cout << R"(T from "base" to "ee_right": )" << std::endl;
-        std::cout << T_base_to_ee << std::endl;
+  std::shared_ptr<Robot<ModelT>> robot_;
+  TrapezoidalMotionGenerator<kDOF> generator_;
+  Eigen::Vector<double, kDOF> vel_limit_;
+  Eigen::Vector<double, kDOF> acc_limit_;
 
-        // Calculate body jacobian from base to ee_right
-        const auto& J = dyn->ComputeBodyJacobian(dyn_state, 0, 1);
-        std::cout << R"(J_body from "base" to "ee_right": )" << std::endl;
-        std::cout << J << std::endl;
+  std::mutex mutex_;
+  Eigen::Vector<double, kDOF> target_position_;
+  double minimum_time_{1.0};
+  bool has_target_{false};
 
-        std::cout << std::endl;
+  Eigen::Vector<double, kDOF> last_target_position_;
+  Eigen::Vector<double, kDOF> last_target_velocity_;
+  bool initialized_{false};
+  double local_t_{0.0};
 
-        // Make control input
-        input.mode.setConstant(kPositionControlMode);
-        input.target = state.position * 0.9;
-        input.feedback_gain.setConstant(2);
-        input.feedforward_torque.setConstant(0);
+  std::atomic<bool> is_running_{true};
+  std::thread rt_thread_;
+};
 
-        input.finish = (count++) > 2000;
-        return input;
-      },
-      0, 10);
+void PrintUsage(const char* prog) {
+  std::cerr << "Usage: " << prog << " --address <server address> [--model a|m|ub] [--power <regex>] [--servo <regex>]"
+            << std::endl;
+  std::cerr << "   or: " << prog << " <server address> [model] [power_regex] [servo_regex]" << std::endl;
+}
 
-  std::cout << "Control Result: " << std::boolalpha << rv << std::endl;
+template <typename ModelT>
+int Run(const std::string& address, const std::string& power, const std::string& servo) {
+  RealTimeControl<ModelT> rt_control(address, power, servo);
+  rt_control.Start();
+
+  double robot_minimum_time = 5.0;
+
+  // Target position in degrees, converted to radians (same as Python)
+  Eigen::Vector<double, ModelT::kRobotDOF> target;
+  target.setZero();
+
+  if constexpr (std::string_view(ModelT::kModelName) == "A") {
+    // wheel(2) + torso(6) + right_arm(7) + left_arm(7) + head(2) = 24
+    target << 0.0, 0.0,                                  // wheel
+        0.0, 45.0, -90.0, 45.0, 0.0, 0.0,                // torso
+        0.0, -5.0, 0.0, -120.0, 0.0, 70.0, 0.0,          // right arm
+        0.0, 5.0, 0.0, -120.0, 0.0, 70.0, 0.0,           // left arm
+        0.0, 0.0;                                          // head
+  } else if constexpr (std::string_view(ModelT::kModelName) == "M") {
+    // wheel(4) + torso(6) + right_arm(7) + left_arm(7) + head(2) = 26
+    target << 0.0, 0.0, 0.0, 0.0,                        // wheel
+        0.0, 45.0, -90.0, 45.0, 0.0, 0.0,                // torso
+        0.0, -5.0, 0.0, -120.0, 0.0, 50.0, 0.0,          // right arm
+        0.0, 5.0, 0.0, -120.0, 0.0, 50.0, 0.0,           // left arm
+        0.0, 0.0;                                          // head
+  }
+
+  target = target * M_PI / 180.0;
+
+  rt_control.SetTarget(target, robot_minimum_time);
+  rt_control.WaitForDone();
 
   return 0;
 }
 
+}  // namespace
+
 int main(int argc, char** argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m]" << std::endl;
+  std::signal(SIGINT, SignalHandler);
+
+  std::string address;
+  std::string model = "a";
+  std::string power = ".*";
+  std::string servo = ".*";
+
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+    if (arg == "--address" && i + 1 < argc) {
+      address = argv[++i];
+    } else if (arg == "--model" && i + 1 < argc) {
+      model = argv[++i];
+    } else if (arg == "--power" && i + 1 < argc) {
+      power = argv[++i];
+    } else if (arg == "--servo" && i + 1 < argc) {
+      servo = argv[++i];
+    } else if (arg.rfind("--", 0) == 0) {
+      PrintUsage(argv[0]);
+      return 1;
+    } else if (address.empty()) {
+      address = arg;
+    } else if (model == "a") {
+      model = arg;
+    } else if (power == ".*") {
+      power = arg;
+    } else if (servo == ".*") {
+      servo = arg;
+    } else {
+      PrintUsage(argv[0]);
+      return 1;
+    }
+  }
+
+  if (address.empty()) {
+    PrintUsage(argv[0]);
     return 1;
   }
-  std::string model = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? argv[2] : "a";
-  if (model == "a") return run<y1_model::A>(argc, argv);
-  return run<y1_model::M>(argc, argv);
+
+  model = ToLower(model);
+
+  if (model == "a") {
+    return Run<y1_model::A>(address, power, servo);
+  }
+  if (model == "m") {
+    return Run<y1_model::M>(address, power, servo);
+  }
+
+  std::cerr << "Unknown model: " << model << " (only 'a' and 'm' supported for this example)" << std::endl;
+  PrintUsage(argv[0]);
+  return 1;
 }

@@ -1,11 +1,9 @@
 // Note: This example does not run in simulation.
 // Joint Group Command Demo
 // This example demonstrates how to control the robot using joint group command.
-// JointGroupPositionCommandBuilder allows controlling a subset of joints by name,
-// instead of requiring positions for all joints in a component.
 //
-// Usage:
-//     ./example_joint_group_command <server address> [servo]
+// Usage example:
+//   ./example_26_joint_group_command --address 127.0.0.1:50051 --model a --power ".*" --servo ".*"
 //
 // Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 //
@@ -14,76 +12,116 @@
 // Rainbow Robotics shall not be held liable for any damages or malfunctions resulting from
 // the use or misuse of this demo code. Please use with caution and at your own discretion.
 
-#if __INTELLISENSE__
-#undef __ARM_NEON
-#undef __ARM_NEON__
-#endif
-
-#include <chrono>
+#include <algorithm>
+#include <cctype>
 #include <iostream>
-#include <thread>
+#include <string>
 #include <vector>
+
+#include <Eigen/Dense>
+
+#include "rby1-sdk/control_manager_state.h"
 #include "rby1-sdk/model.h"
 #include "rby1-sdk/robot.h"
 #include "rby1-sdk/robot_command_builder.h"
 
 using namespace rb;
-using namespace std::chrono_literals;
 
-const std::string kAll = ".*";
+namespace {
 
-template <typename T>
-int run(int argc, char** argv, int extra_start) {
-  std::string address{argv[1]};
-  std::string servo = kAll;
-  if (argc > extra_start) {
-    servo = argv[extra_start];
-  }
+std::string ToLower(std::string v) {
+  std::transform(v.begin(), v.end(), v.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return v;
+}
 
-  auto robot = Robot<T>::Create(address);
+template <typename ModelT>
+std::shared_ptr<Robot<ModelT>> InitializeRobot(const std::string& address, const std::string& power,
+                                               const std::string& servo) {
+  auto robot = Robot<ModelT>::Create(address);
 
-  std::cout << "Attempting to connect to the robot..." << std::endl;
   if (!robot->Connect()) {
-    std::cerr << "Error: Unable to establish connection to the robot at " << address << std::endl;
-    return 1;
+    std::cerr << "Failed to connect robot " << address << std::endl;
+    return nullptr;
   }
-  std::cout << "Successfully connected to the robot." << std::endl;
-
-  if (!robot->IsPowerOn(kAll)) {
-    if (!robot->PowerOn(kAll)) {
-      std::cerr << "Error: Failed to power on the robot." << std::endl;
-      return 1;
+  if (!robot->IsConnected()) {
+    std::cerr << "Robot is not connected" << std::endl;
+    return nullptr;
+  }
+  if (!robot->IsPowerOn(power)) {
+    if (!robot->PowerOn(power)) {
+      std::cerr << "Failed to turn power (" << power << ") on" << std::endl;
+      return nullptr;
     }
   }
-
   if (!robot->IsServoOn(servo)) {
     if (!robot->ServoOn(servo)) {
-      std::cerr << "Error: Failed to activate servo." << std::endl;
-      return 1;
+      std::cerr << "Failed to servo (" << servo << ") on" << std::endl;
+      return nullptr;
     }
   }
 
-  const auto& control_manager_state = robot->GetControlManagerState();
-  if (control_manager_state.state == ControlManagerState::State::kMajorFault ||
-      control_manager_state.state == ControlManagerState::State::kMinorFault) {
+  auto cms = robot->GetControlManagerState();
+  if (cms.state == ControlManagerState::State::kMajorFault || cms.state == ControlManagerState::State::kMinorFault) {
     if (!robot->ResetFaultControlManager()) {
-      std::cerr << "Error: Unable to reset the fault in the Control Manager." << std::endl;
-      return 1;
+      std::cerr << "Failed to reset control manager" << std::endl;
+      return nullptr;
     }
   }
-
   if (!robot->EnableControlManager()) {
-    std::cerr << "Error: Failed to enable the Control Manager." << std::endl;
+    std::cerr << "Failed to enable control manager" << std::endl;
+    return nullptr;
+  }
+
+  return robot;
+}
+
+template <typename ModelT>
+bool MoveToPreControlPose(const std::shared_ptr<Robot<ModelT>>& robot) {
+  Eigen::VectorXd torso(6);
+  torso << 0.0, 0.1, -0.2, 0.1, 0.0, 0.0;
+  Eigen::VectorXd right_arm(7);
+  right_arm << 0.2, -0.2, 0.0, -1.0, 0.0, 0.7, 0.0;
+  Eigen::VectorXd left_arm(7);
+  left_arm << 0.2, 0.2, 0.0, -1.0, 0.0, 0.7, 0.0;
+
+  auto rv = robot
+                ->SendCommand(RobotCommandBuilder().SetCommand(ComponentBasedCommandBuilder().SetBodyCommand(
+                    BodyComponentBasedCommandBuilder()
+                        .SetTorsoCommand(JointPositionCommandBuilder().SetMinimumTime(5.0).SetPosition(torso))
+                        .SetRightArmCommand(JointPositionCommandBuilder().SetMinimumTime(5.0).SetPosition(right_arm))
+                        .SetLeftArmCommand(JointPositionCommandBuilder().SetMinimumTime(5.0).SetPosition(left_arm)))),
+                              90)
+                ->Get();
+  std::cout << "pre control pose finish_code: " << static_cast<int>(rv.finish_code()) << std::endl;
+  if (rv.finish_code() != RobotCommandFeedback::FinishCode::kOk) {
+    return false;
+  }
+  return true;
+}
+
+void PrintUsage(const char* prog) {
+  std::cerr << "Usage: " << prog << " --address <server address> [--model a|m|ub] [--power <regex>] [--servo <regex>]"
+            << std::endl;
+  std::cerr << "   or: " << prog << " <server address> [model] [power_regex] [servo_regex]" << std::endl;
+}
+
+template <typename ModelT>
+int Run(const std::string& address, const std::string& power, const std::string& servo) {
+  auto robot = InitializeRobot<ModelT>(address, power, servo);
+  if (!robot) {
     return 1;
   }
 
-  std::this_thread::sleep_for(1s);
+  if (!MoveToPreControlPose(robot)) {
+    return 1;
+  }
 
   double minimum_time = 2.0;
 
-  // Move both arms to zero position using JointPositionCommandBuilder,
-  // and torso joints 0 & 1 to zero using JointGroupPositionCommandBuilder.
-  std::cout << "Sending joint group command..." << std::endl;
+  // Same as Python: right_arm and left_arm to zero, torso uses JointGroupPositionCommand
+  // for torso_1, torso_2, torso_3 with [0.1, -0.2, 0.1]
+  Eigen::Vector3d torso_group_pos;
+  torso_group_pos << 0.1, -0.2, 0.1;
 
   auto rv = robot
                 ->SendCommand(
@@ -96,32 +134,72 @@ int run(int argc, char** argv, int extra_start) {
                                                    .SetMinimumTime(minimum_time)
                                                    .SetPosition(Eigen::VectorXd::Zero(7)))
                             .SetTorsoCommand(JointGroupPositionCommandBuilder()
-                                                 .SetJointNames({"torso_0", "torso_1"})
-                                                 .SetMinimumTime(minimum_time)
-                                                 .SetPosition(Eigen::Vector2d::Zero())))),
+                                                 .SetJointNames({"torso_1", "torso_2", "torso_3"})
+                                                 .SetPosition(torso_group_pos)
+                                                 .SetMinimumTime(minimum_time)))),
                     1)
                 ->Get();
-
+  std::cout << "joint group command finish_code: " << static_cast<int>(rv.finish_code()) << std::endl;
   if (rv.finish_code() != RobotCommandFeedback::FinishCode::kOk) {
-    std::cerr << "Error: Failed to execute joint group command." << std::endl;
     return 1;
   }
 
-  std::cout << "Joint group command completed successfully." << std::endl;
   return 0;
 }
 
+}  // namespace
+
 int main(int argc, char** argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m] [servo]" << std::endl;
+  std::string address;
+  std::string model = "a";
+  std::string power = ".*";
+  std::string servo = ".*";
+
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+    if (arg == "--address" && i + 1 < argc) {
+      address = argv[++i];
+    } else if (arg == "--model" && i + 1 < argc) {
+      model = argv[++i];
+    } else if (arg == "--power" && i + 1 < argc) {
+      power = argv[++i];
+    } else if (arg == "--servo" && i + 1 < argc) {
+      servo = argv[++i];
+    } else if (arg.rfind("--", 0) == 0) {
+      PrintUsage(argv[0]);
+      return 1;
+    } else if (address.empty()) {
+      address = arg;
+    } else if (model == "a") {
+      model = arg;
+    } else if (power == ".*") {
+      power = arg;
+    } else if (servo == ".*") {
+      servo = arg;
+    } else {
+      PrintUsage(argv[0]);
+      return 1;
+    }
+  }
+
+  if (address.empty()) {
+    PrintUsage(argv[0]);
     return 1;
   }
-  int extra_start = 2;
-  std::string model = "m";
-  if (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) {
-    model = argv[2];
-    extra_start = 3;
+
+  model = ToLower(model);
+
+  if (model == "a") {
+    return Run<y1_model::A>(address, power, servo);
   }
-  if (model == "a") return run<y1_model::A>(argc, argv, extra_start);
-  return run<y1_model::M>(argc, argv, extra_start);
+  if (model == "m") {
+    return Run<y1_model::M>(address, power, servo);
+  }
+  if (model == "ub") {
+    return Run<y1_model::UB>(address, power, servo);
+  }
+
+  std::cerr << "Unknown model: " << model << std::endl;
+  PrintUsage(argv[0]);
+  return 1;
 }

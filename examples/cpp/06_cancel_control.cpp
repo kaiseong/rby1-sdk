@@ -1,12 +1,8 @@
-// Joint Impedance Control Demo
-// This example demonstrates how to control the robot's joints using joint impedance control.
-// Scenario:
-//   1. Move to the pre-control pose
-//   2. Run joint impedance control for both arms
-//   3. Command both arms toward the zero position with stiffness, damping, and torque limits
+// Cancel Command Demo
+// This example demonstrates how to cancel robot control.
 //
 // Usage example:
-//   ./example_22_joint_impedance_control --address 127.0.0.1:50051 --model a --power ".*" --servo ".*"
+//   ./example_06_cancel_control --address 192.168.30.1:50051 --model a --power ".*" --servo ".*"
 //
 // Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 //
@@ -17,8 +13,10 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include "rby1-sdk/control_manager_state.h"
 #include "rby1-sdk/model.h"
@@ -26,6 +24,7 @@
 #include "rby1-sdk/robot_command_builder.h"
 
 using namespace rb;
+using namespace std::chrono_literals;
 
 namespace {
 
@@ -76,7 +75,27 @@ std::shared_ptr<Robot<ModelT>> InitializeRobot(const std::string& address, const
 }
 
 template <typename ModelT>
-bool MoveToPreControlPose(const std::shared_ptr<Robot<ModelT>>& robot) {
+void MoveToZeroPose(const std::shared_ptr<Robot<ModelT>>& robot) {
+  Eigen::VectorXd torso = Eigen::VectorXd::Zero(ModelT::kTorsoIdx.size());
+  Eigen::VectorXd right_arm = Eigen::VectorXd::Zero(ModelT::kRightArmIdx.size());
+  Eigen::VectorXd left_arm = Eigen::VectorXd::Zero(ModelT::kLeftArmIdx.size());
+
+  auto rv = robot
+                ->SendCommand(RobotCommandBuilder().SetCommand(ComponentBasedCommandBuilder().SetBodyCommand(
+                    BodyComponentBasedCommandBuilder()
+                        .SetTorsoCommand(JointPositionCommandBuilder().SetMinimumTime(3.0).SetPosition(torso))
+                        .SetRightArmCommand(JointPositionCommandBuilder().SetMinimumTime(3.0).SetPosition(right_arm))
+                        .SetLeftArmCommand(JointPositionCommandBuilder().SetMinimumTime(3.0).SetPosition(left_arm)))),
+                              90)
+                ->Get();
+  std::cout << "zero pose finish_code: " << static_cast<int>(rv.finish_code()) << std::endl;
+  if (rv.finish_code() != RobotCommandFeedback::FinishCode::kOk) {
+    std::exit(1);
+  }
+}
+
+template <typename ModelT>
+void MoveToPreControlPose(const std::shared_ptr<Robot<ModelT>>& robot) {
   Eigen::VectorXd torso(6);
   torso << 0.0, 0.1, -0.2, 0.1, 0.0, 0.0;
   Eigen::VectorXd right_arm(7);
@@ -94,9 +113,8 @@ bool MoveToPreControlPose(const std::shared_ptr<Robot<ModelT>>& robot) {
                 ->Get();
   std::cout << "pre control pose finish_code: " << static_cast<int>(rv.finish_code()) << std::endl;
   if (rv.finish_code() != RobotCommandFeedback::FinishCode::kOk) {
-    return false;
+    std::exit(1);
   }
-  return true;
 }
 
 void PrintUsage(const char* prog) {
@@ -112,34 +130,15 @@ int Run(const std::string& address, const std::string& power, const std::string&
     return 1;
   }
 
-  if (!MoveToPreControlPose(robot)) {
-    return 1;
-  }
+  MoveToZeroPose(robot);
 
-  // Joint Impedance Control on BOTH arms (same as Python)
-  constexpr size_t right_arm_dof = ModelT::kRightArmIdx.size();
-  constexpr size_t left_arm_dof = ModelT::kLeftArmIdx.size();
-
-  auto handler = robot->SendCommand(
-      RobotCommandBuilder().SetCommand(ComponentBasedCommandBuilder().SetBodyCommand(
-          BodyComponentBasedCommandBuilder()
-              .SetRightArmCommand(JointImpedanceControlCommandBuilder()
-                                     .SetCommandHeader(CommandHeaderBuilder().SetControlHoldTime(10.0))
-                                     .SetPosition(Eigen::VectorXd::Zero(right_arm_dof))
-                                     .SetMinimumTime(5.0)
-                                     .SetStiffness(Eigen::VectorXd::Constant(right_arm_dof, 100.0))
-                                     .SetDampingRatio(1.0)
-                                     .SetTorqueLimit(Eigen::VectorXd::Constant(right_arm_dof, 10.0)))
-              .SetLeftArmCommand(JointImpedanceControlCommandBuilder()
-                                    .SetCommandHeader(CommandHeaderBuilder().SetControlHoldTime(10.0))
-                                    .SetPosition(Eigen::VectorXd::Zero(left_arm_dof))
-                                    .SetMinimumTime(5.0)
-                                    .SetStiffness(Eigen::VectorXd::Constant(left_arm_dof, 100.0))
-                                    .SetDampingRatio(1.0)
-                                    .SetTorqueLimit(Eigen::VectorXd::Constant(left_arm_dof, 10.0))))));
-
-  auto rv = handler->Get();
-  std::cout << "Finish Code: " << static_cast<int>(rv.finish_code()) << std::endl;
+  // Start move_to_pre_control_pose in a separate thread
+  std::thread thread([&robot]() { MoveToPreControlPose(robot); });
+  std::cout << "move start. minimum time 5 seconds..." << std::endl;
+  std::this_thread::sleep_for(2s);
+  std::cout << "cancel control" << std::endl;
+  robot->CancelControl();
+  thread.join();
 
   return 0;
 }
