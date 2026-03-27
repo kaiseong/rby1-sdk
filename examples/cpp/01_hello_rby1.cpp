@@ -1,6 +1,9 @@
 // Hello RB-Y1 Demo
 // This example demonstrates basic connection to RB-Y1 robot and retrieves robot information
-// in different string representation formats.
+// in different string representation formats. See --help for arguments.
+//
+// Usage example:
+//     ./example_01_hello_rby1 --address 192.168.30.1:50051 --model a
 //
 // Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 //
@@ -207,9 +210,6 @@ int main(int argc, char** argv) {
   }
   if (model == "m") {
     return RunHello<y1_model::M>(address);
-  }
-  if (model == "ub") {
-    return RunHello<y1_model::UB>(address);
   }
 
   std::cerr << "Unknown model: " << model << std::endl;

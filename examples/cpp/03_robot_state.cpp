@@ -448,9 +448,6 @@ int main(int argc, char** argv) {
   if (model == "m") {
     return RunRobotState<y1_model::M>(address, power);
   }
-  if (model == "ub") {
-    return RunRobotState<y1_model::UB>(address, power);
-  }
 
   std::cerr << "Unknown model: " << model << std::endl;
   PrintUsage(argv[0]);
