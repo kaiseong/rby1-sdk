@@ -31,16 +31,16 @@ int main(int argc, char** argv) {
 
   robot->PowerOn(".*");
   std::this_thread::sleep_for(0.5s);
-  std::cout << "Break Release!" << std::endl;
-  if (!robot->BreakRelease(joint_name)) {
-    std::cerr << "Error: Failed to break release." << std::endl;
+  std::cout << "Brake Release!" << std::endl;
+  if (!robot->BrakeRelease(joint_name)) {
+    std::cerr << "Error: Failed to brake release." << std::endl;
     return 1;
   }
   std::this_thread::sleep_for(0.5s);
-  std::cout << "Break Engage!" << std::endl;
-  robot->BreakEngage(joint_name);
-  if (!robot->BreakEngage(joint_name)) {
-    std::cerr << "Error: Failed to break engage." << std::endl;
+  std::cout << "Brake Engage!" << std::endl;
+  robot->BrakeEngage(joint_name);
+  if (!robot->BrakeEngage(joint_name)) {
+    std::cerr << "Error: Failed to brake engage." << std::endl;
     return 1;
   }
 

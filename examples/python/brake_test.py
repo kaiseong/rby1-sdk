@@ -20,18 +20,18 @@ def main(address, joint):
             exit(1)
 
     time.sleep(0.5)
-    print("Break Release!")
-    if not robot.break_release(joint):
-        print("Error: Failed to break release.")
+    print("Brake Release!")
+    if not robot.brake_release(joint):
+        print("Error: Failed to brake release.")
 
     time.sleep(0.5)
-    print("Break Engage!")
-    if not robot.break_engage(joint):
-        print("Error: Failed to break engage.")
+    print("Brake Engage!")
+    if not robot.brake_engage(joint):
+        print("Error: Failed to brake engage.")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="break test")
+    parser = argparse.ArgumentParser(description="brake test")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
     parser.add_argument("--joint", type=str, help="Joint name regex pattern")
 

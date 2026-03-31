@@ -1,10 +1,16 @@
+## Unreleased
+
+### ⚠️ Breaking Changes
+
+- **api**: rename `BreakEngage`/`BreakRelease` → `BrakeEngage`/`BrakeRelease` (C++)
+- **api**: rename `break_engage`/`break_release` → `brake_engage`/`brake_release` (Python)
+
 ## v0.9.1 (2025-11-05)
 
 ### 🐛 Fixes
 
 - install conan on MacOS through Homebrew
 - **udp_server**: use separate IPv4/IPv6 sockets for UdpServer to ensure dual-stack compatability on MacOS
-
 ## v0.9.0 (2025-10-24)
 
 ### ♻️ Refactor

@@ -28,7 +28,7 @@ set(EXAMPLES
         rtcomm_protocol
         stop_command
 
-        break_test
+        brake_test
         get_pid_gain
         set_pid_gain
         fatory_default_pid_gain
