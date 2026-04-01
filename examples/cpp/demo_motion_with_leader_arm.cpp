@@ -47,7 +47,7 @@ bool redandancy_mode = false;
 double m_sf = 0.4;
 
 double init_cnt = 0.;
-bool ma_master_mode = false;
+bool ma_leader_mode = false;
 
 using namespace rb::dyn;
 using namespace rb;
@@ -1102,10 +1102,10 @@ void control_loop_for_robot(std::shared_ptr<rb::Robot<y1_model::A>> robot) {
   std::exit(0);
 }
 
-void control_loop_for_master_arm(dynamixel::PortHandler* portHandler, dynamixel::PacketHandler* packetHandler,
+void control_loop_for_leader_arm(dynamixel::PortHandler* portHandler, dynamixel::PacketHandler* packetHandler,
                                  std::vector<int> activeIDs) {
 
-  auto robot = std::make_shared<rb::dyn::Robot<14>>(LoadRobotFromURDF(PATH "/master_arm.urdf", "Base"));
+  auto robot = std::make_shared<rb::dyn::Robot<14>>(LoadRobotFromURDF(PATH "/leader_arm.urdf", "Base"));
   auto state = robot->MakeState<std::vector<std::string>, std::vector<std::string>>(
       {"Base", "Link_0R", "Link_1R", "Link_2R", "Link_3R", "Link_4R", "Link_5R", "Link_6R", "Link_0L", "Link_1L",
        "Link_2L", "Link_3L", "Link_4L", "Link_5L", "Link_6L"},
@@ -1289,7 +1289,7 @@ int main(int argc, char** argv) {
   }
 
   try {
-    upc::InitializeDevice(upc::kMasterArmDeviceName);
+    upc::InitializeDevice(upc::kLeaderArmDeviceName);
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     return 1;
@@ -1375,9 +1375,9 @@ int main(int argc, char** argv) {
   }
   std::cout << "Control Manager enabled successfully." << std::endl;
 
-  const char* devicename_master_arm = "/dev/rby1_master_arm";
+  const char* devicename_leader_arm = "/dev/rby1_leader_arm";
 
-  dynamixel::PortHandler* portHandler = dynamixel::PortHandler::getPortHandler(devicename_master_arm);
+  dynamixel::PortHandler* portHandler = dynamixel::PortHandler::getPortHandler(devicename_leader_arm);
   dynamixel::PacketHandler* packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
 
   if (!portHandler->openPort()) {
@@ -1404,7 +1404,7 @@ int main(int argc, char** argv) {
   }
 
   if (activeIDs.size() != 14) {
-    std::cerr << "Unable to ping all devices for master arm" << std::endl;
+    std::cerr << "Unable to ping all devices for leader arm" << std::endl;
     Eigen::Map<Eigen::VectorXi> ids(activeIDs.data(), activeIDs.size());
     std::cerr << "active ids: " << ids.transpose() << std::endl;
     return 1;
@@ -1423,11 +1423,11 @@ int main(int argc, char** argv) {
     }
   }
 
-  std::thread master_arm_handler(control_loop_for_master_arm, portHandler, packetHandler, activeIDs);
+  std::thread leader_arm_handler(control_loop_for_leader_arm, portHandler, packetHandler, activeIDs);
   std::this_thread::sleep_for(1s);
   std::thread robot_op(control_loop_for_robot, robot);
 
-  master_arm_handler.join();
+  leader_arm_handler.join();
   robot_op.join();
 
   return 0;

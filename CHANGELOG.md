@@ -4,6 +4,9 @@
 
 - **api**: rename `BreakEngage`/`BreakRelease` → `BrakeEngage`/`BrakeRelease` (C++)
 - **api**: rename `break_engage`/`break_release` → `brake_engage`/`brake_release` (Python)
+- **api**: rename `MasterArm` → `LeaderArm` (C++/Python). `MasterArm` is kept as a deprecated alias.
+- **api**: rename `kMasterArmDeviceName` → `kLeaderArmDeviceName` (C++), `MasterArmDeviceName` → `LeaderArmDeviceName` (Python). Old names are kept as deprecated aliases.
+- **api**: device path changed from `/dev/rby1_master_arm` to `/dev/rby1_leader_arm`. Constructor auto-falls back to legacy path if new path does not exist.
 
 ## v0.9.1 (2025-11-05)
 

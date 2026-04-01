@@ -5,17 +5,17 @@
 
 #include "rby1-sdk/model.h"
 #include "rby1-sdk/robot.h"
-#include "rby1-sdk/upc/master_arm.h"
+#include "rby1-sdk/upc/leader_arm.h"
 
 using namespace rb;
 using namespace std::chrono_literals;
 
 auto robot = Robot<y1_model::A>::Create("192.168.30.1:50051");
-auto master_arm = std::make_shared<upc::MasterArm>("/dev/rby1_master_arm");
+auto leader_arm = std::make_shared<upc::LeaderArm>("/dev/rby1_leader_arm");
 
 void signalHandler(int signum) {
 
-  master_arm->StopControl();
+  leader_arm->StopControl();
   robot->PowerOff("12v");
   exit(signum);
 }
@@ -52,26 +52,26 @@ int main(int argc, char** argv) {
 
   try {
     // Latency timer setting
-    upc::InitializeDevice("/dev/rby1_master_arm");
+    upc::InitializeDevice("/dev/rby1_leader_arm");
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     return 1;
   }
 
-  master_arm->SetModelPath(MODELS_PATH "/master_arm/model.urdf");
-  master_arm->SetControlPeriod(0.01);  // 100Hz
+  leader_arm->SetModelPath(MODELS_PATH "/leader_arm/model.urdf");
+  leader_arm->SetControlPeriod(0.01);  // 100Hz
 
-  auto active_ids = master_arm->Initialize();
-  if (active_ids.size() != upc::MasterArm::kDeivceCount) {
+  auto active_ids = leader_arm->Initialize();
+  if (active_ids.size() != upc::LeaderArm::kDeivceCount) {
     return 1;
   }
 
   bool init = false;
-  Eigen::Vector<double, upc::MasterArm::kDOF / 2> q_right, q_left;
+  Eigen::Vector<double, upc::LeaderArm::kDOF / 2> q_right, q_left;
   q_right.setZero();
   q_left.setZero();
-  master_arm->StartControl([&](const upc::MasterArm::State& state) {
-    upc::MasterArm::ControlInput input;
+  leader_arm->StartControl([&](const upc::LeaderArm::State& state) {
+    upc::LeaderArm::ControlInput input;
 
     if (!init) {
       q_right = state.q_joint(Eigen::seq(0, 6));
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
 
   std::this_thread::sleep_for(20s);
 
-  master_arm->StopControl();
+  leader_arm->StopControl();
   robot->PowerOff("12v");
 
   return 0;

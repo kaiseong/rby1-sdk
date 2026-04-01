@@ -25,18 +25,18 @@ def main(address, model):
 
     signal.signal(signal.SIGINT, handler)
 
-    rby.upc.initialize_device(rby.upc.MasterArmDeviceName)
+    rby.upc.initialize_device(rby.upc.LeaderArmDeviceName)
 
-    master_arm_model = f"{os.path.dirname(os.path.realpath(__file__))}/../../models/master_arm/model.urdf"
-    master_arm = rby.upc.MasterArm(rby.upc.MasterArmDeviceName)
-    master_arm.set_model_path(master_arm_model)
-    master_arm.set_control_period(0.01)
-    active_ids = master_arm.initialize(verbose=True)
-    if len(active_ids) != rby.upc.MasterArm.DeviceCount:
-        print("Error: Mismatch in the number of devices detected for RBY Master Arm.")
+    leader_arm_model = f"{os.path.dirname(os.path.realpath(__file__))}/../../models/leader_arm/model.urdf"
+    leader_arm = rby.upc.LeaderArm(rby.upc.LeaderArmDeviceName)
+    leader_arm.set_model_path(leader_arm_model)
+    leader_arm.set_control_period(0.01)
+    active_ids = leader_arm.initialize(verbose=True)
+    if len(active_ids) != rby.upc.LeaderArm.DeviceCount:
+        print("Error: Mismatch in the number of devices detected for RBY Leader Arm.")
         exit(1)
 
-    def control(state: rby.upc.MasterArm.State):
+    def control(state: rby.upc.LeaderArm.State):
         with np.printoptions(suppress=True, precision=3, linewidth=300):
             print(f"--- {datetime.datetime.now().time()} ---")
             print(f"q: {state.q_joint}")
@@ -45,22 +45,22 @@ def main(address, model):
                 f"right: {state.button_right.button}, left: {state.button_left.button}"
             )
 
-        input = rby.upc.MasterArm.ControlInput()
+        input = rby.upc.LeaderArm.ControlInput()
 
         input.target_operating_mode.fill(rby.DynamixelBus.CurrentControlMode)
         input.target_torque = state.gravity_term
 
         return input
 
-    master_arm.start_control(control)
+    leader_arm.start_control(control)
 
     time.sleep(100)
 
-    master_arm.stop_control()
+    leader_arm.stop_control()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="19_master_arm")
+    parser = argparse.ArgumentParser(description="19_leader_arm")
     parser.add_argument("--address", type=str, required=True, help="Robot address")
     parser.add_argument(
         "--model", type=str, default="a", help="Robot Model Name (default: 'a')"

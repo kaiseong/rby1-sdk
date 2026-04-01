@@ -1,17 +1,17 @@
-#include "rby1-sdk/upc/master_arm.h"
+#include "rby1-sdk/upc/leader_arm.h"
 
 #include <Eigen/Core>
 #include <iostream>
 
 namespace rb::upc {
 
-MasterArm::MasterArm(const std::string& dev_name)
-    : handler_(std::make_shared<DynamixelBus>(dev_name)), control_period_(0.1) {
+LeaderArm::LeaderArm(const std::string& dev_name)
+    : handler_(std::make_shared<DynamixelBus>(dev_name.empty() ? ResolveLeaderArmDeviceName() : dev_name)), control_period_(0.1) {
   torque_constant_ = {1.6591, 1.6591, 1.6591, 1.3043, 1.3043, 1.3043, 1.3043,
                       1.6591, 1.6591, 1.6591, 1.3043, 1.3043, 1.3043, 1.3043};  // Default torque constant
 }
 
-MasterArm::~MasterArm() {
+LeaderArm::~LeaderArm() {
   this->StopControl();
 
   // Set torque to zero
@@ -30,19 +30,19 @@ MasterArm::~MasterArm() {
   this->DisableTorque();
 }
 
-void MasterArm::SetControlPeriod(double control_period) {
+void LeaderArm::SetControlPeriod(double control_period) {
   control_period_ = control_period;
 }
 
-void MasterArm::SetModelPath(const std::string& model_path) {
+void LeaderArm::SetModelPath(const std::string& model_path) {
   model_path_ = model_path;
 }
 
-void MasterArm::SetTorqueConstant(const std::array<double, MasterArm::kDOF>& torque_constant) {
+void LeaderArm::SetTorqueConstant(const std::array<double, LeaderArm::kDOF>& torque_constant) {
   torque_constant_ = torque_constant;
 }
 
-std::vector<int> MasterArm::Initialize(bool verbose) {
+std::vector<int> LeaderArm::Initialize(bool verbose) {
   if (!handler_->OpenPort()) {
     if (verbose) {
       std::cerr << "Failed to open the port!" << std::endl;
@@ -86,7 +86,7 @@ std::vector<int> MasterArm::Initialize(bool verbose) {
   }
   if (active_ids.size() != 16) {
     if (verbose) {
-      std::cerr << "Unable to ping all devices for master arm" << std::endl;
+      std::cerr << "Unable to ping all devices for leader arm" << std::endl;
     }
     Eigen::Map<Eigen::VectorXi> ids(active_ids.data(), (long)active_ids.size());
     if (verbose) {
@@ -100,7 +100,7 @@ std::vector<int> MasterArm::Initialize(bool verbose) {
   return active_ids;
 }
 
-bool MasterArm::StartControl(const std::function<ControlInput(const State& state)>& control) {
+bool LeaderArm::StartControl(const std::function<ControlInput(const State& state)>& control) {
   if (!initialized_) {
     return false;
   }
@@ -269,7 +269,7 @@ bool MasterArm::StartControl(const std::function<ControlInput(const State& state
   return true;
 }
 
-bool MasterArm::StopControl(bool torque_disable) {
+bool LeaderArm::StopControl(bool torque_disable) {
   if (!initialized_) {
     return false;
   }
@@ -306,7 +306,7 @@ bool MasterArm::StopControl(bool torque_disable) {
   return true;
 }
 
-bool MasterArm::EnableTorque() {
+bool LeaderArm::EnableTorque() {
   if (!initialized_) {
     return false;
   }
@@ -324,7 +324,7 @@ bool MasterArm::EnableTorque() {
   return true;
 }
 
-bool MasterArm::DisableTorque() {
+bool LeaderArm::DisableTorque() {
   if (!initialized_) {
     return false;
   }

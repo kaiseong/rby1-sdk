@@ -4,7 +4,7 @@ set(MODULE_TEST
         right_arm
         left_arm
         ft_sensor 
-        master_arm
+        leader_arm
         gripper
         tool_flange
 )
