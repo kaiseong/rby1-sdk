@@ -2,7 +2,7 @@
 # This example demonstrates how to cancel robot control. See --help for arguments.
 #
 # Usage example:
-#     python 06_cancel_command.py --address 192.168.30.1:50051 --model a
+#     python 25_cancel_control.py --address 192.168.30.1:50051 --model a
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #
@@ -12,11 +12,15 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 
-import rby1_sdk as rby
-import time
 import argparse
+import logging
 import threading
+import time
+
 import numpy as np
+import rby1_sdk as rby
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def move_to_zero_pose(robot):
     """Move to the zero pose before starting the motion."""

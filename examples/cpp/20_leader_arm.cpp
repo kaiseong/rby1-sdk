@@ -89,7 +89,7 @@ int Run(const std::string& address) {
   leader_arm->SetModelPath(MODELS_PATH "/leader_arm/model.urdf");
   leader_arm->SetControlPeriod(0.01);
   const auto active_ids = leader_arm->Initialize(true);
-  if (active_ids.size() != upc::LeaderArm::kDeivceCount) {
+  if (active_ids.size() != upc::LeaderArm::kDeviceCount) {
     std::cerr << "Error: Mismatch in the number of devices detected for RBY Leader Arm." << std::endl;
     return 1;
   }

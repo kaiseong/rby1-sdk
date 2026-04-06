@@ -34,7 +34,6 @@ int run(int argc, char** argv, int extra_start) {
   }
   std::this_thread::sleep_for(0.5s);
   std::cout << "Brake Engage!" << std::endl;
-  robot->BrakeEngage(joint_name);
   if (!robot->BrakeEngage(joint_name)) {
     std::cerr << "Error: Failed to brake engage." << std::endl;
     return 1;

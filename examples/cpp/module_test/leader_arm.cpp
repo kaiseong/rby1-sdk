@@ -10,7 +10,7 @@
 using namespace rb;
 using namespace std::chrono_literals;
 
-std::shared_ptr<upc::LeaderArm> leader_arm = std::make_shared<upc::LeaderArm>("/dev/rby1_leader_arm");
+std::shared_ptr<upc::LeaderArm> leader_arm = std::make_shared<upc::LeaderArm>(upc::kLeaderArmDeviceName);
 std::function<void()> g_robot_power_off;
 
 void signalHandler(int signum) {
@@ -48,7 +48,7 @@ int run(int argc, char** argv) {
 
   try {
     // Latency timer setting
-    upc::InitializeDevice("/dev/rby1_leader_arm");
+    upc::InitializeDevice(upc::ResolveLeaderArmDeviceName());
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     return 1;
@@ -58,7 +58,7 @@ int run(int argc, char** argv) {
   leader_arm->SetControlPeriod(0.01);  // 100Hz
 
   auto active_ids = leader_arm->Initialize();
-  if (active_ids.size() != upc::LeaderArm::kDeivceCount) {
+  if (active_ids.size() != upc::LeaderArm::kDeviceCount) {
     return 1;
   }
 

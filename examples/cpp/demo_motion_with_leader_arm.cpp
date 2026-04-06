@@ -1373,9 +1373,9 @@ int run(int argc, char** argv) {
   }
   std::cout << "Control Manager enabled successfully." << std::endl;
 
-  const char* devicename_leader_arm = "/dev/rby1_leader_arm";
+  const std::string devicename_leader_arm = upc::ResolveLeaderArmDeviceName();
 
-  dynamixel::PortHandler* portHandler = dynamixel::PortHandler::getPortHandler(devicename_leader_arm);
+  dynamixel::PortHandler* portHandler = dynamixel::PortHandler::getPortHandler(devicename_leader_arm.c_str());
   dynamixel::PacketHandler* packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
 
   if (!portHandler->openPort()) {

@@ -26,7 +26,7 @@ def cb(state):
     global recorded_traj, recording
     if recording:
         print("---")
-        print(f"current position: {state.target_position}")
+        print(f"target position: {state.target_position}")
 
         current_state = state.position.copy()
         recorded_traj.append(current_state)
