@@ -212,7 +212,7 @@ Construct a ``ControlInput`` instance with default values.
 
   ma_m  //
       .def_readonly_static("DOF", &LeaderArm::kDOF)
-      .def_readonly_static("DeviceCount", &LeaderArm::kDeivceCount)
+      .def_readonly_static("DeviceCount", &LeaderArm::kDeviceCount)
       .def_readonly_static("TorqueScaling", &LeaderArm::kTorqueScaling)
       .def_readonly_static("MaximumTorque", &LeaderArm::kMaximumTorque)
       .def_readonly_static("RightToolId", &LeaderArm::kRightToolId)

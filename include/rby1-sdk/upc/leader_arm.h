@@ -18,7 +18,9 @@ namespace rb::upc {
 class RBY1_SDK_API LeaderArm {
  public:
   static constexpr int kDOF = 14;
-  static constexpr int kDeivceCount = kDOF + 2;
+  static constexpr int kDeviceCount = kDOF + 2;
+  /// @deprecated Use kDeviceCount instead.
+  static constexpr int kDeivceCount = kDeviceCount;
   static constexpr double kTorqueScaling = 0.5;
   static constexpr double kMaximumTorque = 4.;  // 3.0 Nm
 

@@ -6,7 +6,9 @@
 namespace rb::upc {
 
 LeaderArm::LeaderArm(const std::string& dev_name)
-    : handler_(std::make_shared<DynamixelBus>(dev_name.empty() ? ResolveLeaderArmDeviceName() : dev_name)), control_period_(0.1) {
+    : handler_(std::make_shared<DynamixelBus>(
+          (dev_name.empty() || dev_name == kLeaderArmDeviceName) ? ResolveLeaderArmDeviceName() : dev_name)),
+      control_period_(0.1) {
   torque_constant_ = {1.6591, 1.6591, 1.6591, 1.3043, 1.3043, 1.3043, 1.3043,
                       1.6591, 1.6591, 1.6591, 1.3043, 1.3043, 1.3043, 1.3043};  // Default torque constant
 }

@@ -996,8 +996,8 @@ dev_name : str
 
 Examples
 --------
->>> # Engage brake for manitance
->>> robot.break_engage("right_arm_0")
+>>> # Engage brake for maintenance
+>>> robot.brake_engage("right_arm_0")
 )doc")
       .def("brake_release", &Robot<T>::BrakeRelease, "dev_name"_a, R"doc(
 break_release(dev_name)
@@ -1012,7 +1012,7 @@ dev_name : str
 Examples
 --------
 >>> # Release brake to allow movement
->>> robot.break_release("right_arm_0")
+>>> robot.brake_release("right_arm_0")
 )doc")
       .def("home_offset_reset", &Robot<T>::HomeOffsetReset, "dev_name"_a, R"doc(
 Reset home offset for a device.
