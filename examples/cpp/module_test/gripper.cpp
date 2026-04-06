@@ -205,7 +205,8 @@ void control_loop_for_gripper(dynamixel::PortHandler* portHandler, dynamixel::Pa
   std::cout << "OK\n";
 }
 
-int main(int argc, char** argv) {
+template <typename T>
+int run(int argc, char** argv) {
   try {
     // Latency timer setting
     upc::InitializeDevice(upc::kGripperDeviceName);
@@ -214,14 +215,9 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address>" << std::endl;
-    return 1;
-  }
-
   std::string address{argv[1]};
 
-  auto robot = rb::Robot<y1_model::A>::Create(address);
+  auto robot = rb::Robot<T>::Create(address);
 
   std::cout << "Attempting to connect to the robot..." << std::endl;
   if (!robot->Connect()) {
@@ -311,4 +307,14 @@ int main(int argc, char** argv) {
   portHandler_gripper->closePort();
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m]" << std::endl;
+    return 1;
+  }
+  std::string model = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? argv[2] : "m";
+  if (model == "a") return run<y1_model::A>(argc, argv);
+  return run<y1_model::M>(argc, argv);
 }

@@ -498,7 +498,8 @@ Eigen::Matrix<double, 14, 1> calc_torque_for_limit_avoid(Eigen::Matrix<double, 1
   return torque_add;
 }
 
-void control_loop_for_robot(std::shared_ptr<rb::Robot<y1_model::A>> robot) {
+template <typename T>
+void control_loop_for_robot(std::shared_ptr<rb::Robot<T>> robot) {
 
   Eigen::Vector<double, 6> q_joint_waist;
   Eigen::Vector<double, 7> q_joint_right_arm;
@@ -1265,14 +1266,11 @@ void control_loop_for_leader_arm(dynamixel::PortHandler* portHandler, dynamixel:
   }
 }
 
-int main(int argc, char** argv) {
+template <typename T>
+int run(int argc, char** argv) {
+  int extra_start = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? 3 : 2;
 
   // QApplication app(argc, argv);
-
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <server address> [servo]" << std::endl;
-    return 1;
-  }
 
   // UdpThread thread;
   // thread.start();
@@ -1284,8 +1282,8 @@ int main(int argc, char** argv) {
       "right_arm_3|right_arm_4|right_arm_5|right_arm_6|left_arm_0|left_arm_1|left_arm_2|left_arm_3|left_arm_4|left_arm_"
       "5|left_arm_6)$";  // 기본값
 
-  if (argc >= 3) {
-    servo = argv[2];
+  if (argc >= extra_start + 1) {
+    servo = argv[extra_start];
   }
 
   try {
@@ -1295,7 +1293,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  auto robot = rb::Robot<y1_model::A>::Create(address);
+  auto robot = rb::Robot<T>::Create(address);
 
   std::cout << "Attempting to connect to the robot..." << std::endl;
   if (!robot->Connect()) {
@@ -1425,10 +1423,20 @@ int main(int argc, char** argv) {
 
   std::thread leader_arm_handler(control_loop_for_leader_arm, portHandler, packetHandler, activeIDs);
   std::this_thread::sleep_for(1s);
-  std::thread robot_op(control_loop_for_robot, robot);
+  std::thread robot_op(control_loop_for_robot<T>, robot);
 
   leader_arm_handler.join();
   robot_op.join();
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <server address> [model=a|m] [servo]" << std::endl;
+    return 1;
+  }
+  std::string model = (argc >= 3 && (std::string(argv[2]) == "a" || std::string(argv[2]) == "m")) ? argv[2] : "m";
+  if (model == "a") return run<y1_model::A>(argc, argv);
+  return run<y1_model::M>(argc, argv);
 }
