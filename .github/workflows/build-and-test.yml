@@ -94,6 +94,7 @@ jobs:
           python -m pip install --upgrade pip conan
 
       - name: Configure Conan
+        shell: bash
         run: |
           conan profile detect --force
           mkdir -p "$(conan config home)"
