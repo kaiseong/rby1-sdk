@@ -99,7 +99,7 @@ jobs:
           mkdir -p "$(conan config home)"
           cat >> "$(conan config home)/global.conf" <<'EOF'
           core.net.http:max_retries=10
-          core.net.http:retry_wait=30
+          core.download:retry_wait=30
           EOF
 
       # RELEASE MODE
