@@ -16,6 +16,7 @@
 
 
 # Run this example on a UPC to which the master arm and gripper are connected.
+import importlib
 import rby1_sdk as rby
 import numpy as np
 import os
@@ -27,6 +28,9 @@ import threading
 import datetime
 from typing import *
 from dataclasses import dataclass
+
+helper = importlib.import_module("00_helper")
+initialize_robot = helper.initialize_robot
 
 GRIPPER_DIRECTION = False
 
@@ -221,10 +225,8 @@ def move_j(robot: Union[rby.Robot_A, rby.Robot_M], pose: Pose, minimum_time=5.0)
 
 def main(address, model, power, servo, control_mode):
     # ===== SETUP ROBOT =====
-    robot = rby.create_robot(address, model)
-    if not robot.connect():
-        logging.error(f"Failed to connect robot {address}")
-        exit(1)
+    robot = initialize_robot(address, model, power, servo)
+    
     supported_model = ["A", "M"]
     supported_control_mode = ["position", "impedance"]
     model = robot.model()
@@ -251,18 +253,7 @@ def main(address, model, power, servo, control_mode):
         )
         exit(1)
     position_mode = control_mode == "position"
-    if not robot.is_power_on(power):
-        if not robot.power_on(power):
-            logging.error(f"Failed to turn power ({power}) on")
-            exit(1)
-    if not robot.is_servo_on(servo):
-        if not robot.servo_on(servo):
-            logging.error(f"Failed to servo ({servo}) on")
-            exit(1)
-    robot.reset_fault_control_manager()
-    if not robot.enable_control_manager():
-        logging.error(f"Failed to enable control manager")
-        exit(1)
+    
     for arm in ["right", "left"]:
         if not robot.set_tool_flange_output_voltage(arm, 12):
             logging.error(f"Failed to set tool flange output voltage ({arm}) as 12v")
