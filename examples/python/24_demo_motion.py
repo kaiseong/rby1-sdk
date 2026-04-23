@@ -387,10 +387,11 @@ def example_impedance_control_command_1(robot):
     # Define transformation matrices
     angle = np.pi / 6
     T_torso = make_transform(rot_y(angle), [0.1, 0, 1.2])
-
+    
     angle = -np.pi / 4
-    T_right = make_transform(rot_y(angle), [0.45, -0.4, -0.1])
-    T_left = make_transform(rot_y(angle), [0.45, 0.4, -0.1])
+    T_right = make_transform(rot_y(angle), [0.35, -0.4, -0.2])
+    T_left = make_transform(rot_y(angle), [0.35, 0.4, -0.2])
+
     target_link = "link_torso_5"
 
     # Build commands

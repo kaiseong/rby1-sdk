@@ -63,7 +63,7 @@ def main(address, model, power, servo):
                 .set_torso_command(
                     rby.JointGroupPositionCommandBuilder()
                     .set_joint_names(["torso_1", "torso_2", "torso_3"])
-                    .set_position(np.array([0.1, -0.2, 0.1]))
+                    .set_position(np.array([0.3, -0.6, 0.3]))
                     .set_minimum_time(minimum_time)
                 )
             )
