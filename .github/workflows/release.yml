@@ -199,6 +199,8 @@ jobs:
       - name: Configure Conan
         run: |
           conan profile detect --force
+          conan config set core.net.http:max_retries=10
+          conan config set core.net.http:retry_wait=30
 
       # RELEASE MODE
 

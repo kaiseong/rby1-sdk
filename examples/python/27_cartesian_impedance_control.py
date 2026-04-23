@@ -25,7 +25,6 @@ helper = importlib.import_module("00_helper")
 initialize_robot = helper.initialize_robot
 movej = helper.movej
 
-
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )

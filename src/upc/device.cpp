@@ -52,6 +52,23 @@ std::string ResolveSymlink(const std::string& symlink) {
 
 namespace rb::upc {
 
+std::string ResolveLeaderArmDeviceName() {
+#if defined(_WIN32)
+  return kLeaderArmDeviceName;
+#else
+  if (access(kLeaderArmDeviceName, F_OK) == 0) {
+    return kLeaderArmDeviceName;
+  }
+  if (access(kLegacyLeaderArmDeviceName, F_OK) == 0) {
+    std::cerr << "[rby1-sdk] Warning: '" << kLeaderArmDeviceName << "' not found. "
+              << "Falling back to legacy device path '" << kLegacyLeaderArmDeviceName << "'. "
+              << "Please update your udev rules." << std::endl;
+    return kLegacyLeaderArmDeviceName;
+  }
+  return kLeaderArmDeviceName;
+#endif
+}
+
 void InitializeDevice(const std::string& device_name) {
 #if defined(_WIN32)
   throw std::runtime_error("Not implemented: Unable to initialize device on Windows");

@@ -20,6 +20,13 @@
 #include <algorithm>
 #include <atomic>
 #include <cctype>
+<<<<<<< HEAD
+=======
+#include <chrono>
+#ifdef _WIN32
+#  define _USE_MATH_DEFINES
+#endif
+>>>>>>> upstream/dev
 #include <cmath>
 #include <csignal>
 #include <iostream>

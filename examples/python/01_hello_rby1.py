@@ -15,6 +15,8 @@
 import argparse
 import rby1_sdk as rby
 
+import rby1_sdk as rby
+
 
 def main(address, model):
     robot = rby.create_robot(address, model)

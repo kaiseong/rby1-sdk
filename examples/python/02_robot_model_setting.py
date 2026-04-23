@@ -1,4 +1,3 @@
-
 # Robot Model Setting Example
 #
 # This example includes the following features:

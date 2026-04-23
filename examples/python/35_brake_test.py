@@ -46,14 +46,14 @@ def main(address, model, power, joint):
 
 
     logging.info(f"Brake release requested for {joint}")
-    if not robot.break_release(joint):
+    if not robot.brake_release(joint):
         logging.error(f"Failed to release brake for {joint}")
         exit(1)
 
     time.sleep(0.5)
 
     logging.info(f"Brake engage requested for {joint}")
-    if not robot.break_engage(joint):
+    if not robot.brake_engage(joint):
         logging.error(f"Failed to engage brake for {joint}")
         exit(1)
 

@@ -506,7 +506,6 @@ def example_relative_command_1(robot):
 
 
 
-
 def example_optimal_control_1(robot):
     print("Optimal control example 1")
 

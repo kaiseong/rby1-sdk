@@ -47,7 +47,7 @@ class Pose:
 
 
 class Settings:
-    master_arm_loop_period = 1 / 100
+    leader_arm_loop_period = 1 / 100
     impedance_stiffness = 50
     impedance_damping_ratio = 1.0
     impedance_torque_limit = 30.0
@@ -265,7 +265,7 @@ def main(address, model, power, servo, control_mode):
         nonlocal robot_q
         robot_q = state.position
 
-    robot.start_state_update(robot_state_callback, 1 / Settings.master_arm_loop_period)
+    robot.start_state_update(robot_state_callback, 1 / Settings.leader_arm_loop_period)
 
     # ===== SETUP GRIPPER =====
     gripper = Gripper()
@@ -277,16 +277,16 @@ def main(address, model, power, servo, control_mode):
     gripper.homing()
     gripper.start()
 
-    # ===== SETUP MASTER ARM =====
-    rby.upc.initialize_device(rby.upc.MasterArmDeviceName)
-    master_arm_model = f"{os.path.dirname(os.path.realpath(__file__))}/../../models/master_arm/model.urdf"
-    master_arm = rby.upc.MasterArm(rby.upc.MasterArmDeviceName)
-    master_arm.set_model_path(master_arm_model)
-    master_arm.set_control_period(Settings.master_arm_loop_period)
-    active_ids = master_arm.initialize(verbose=False)
-    if len(active_ids) != rby.upc.MasterArm.DeviceCount:
+    # ===== SETUP LEADER ARM =====
+    rby.upc.initialize_device(rby.upc.LeaderArmDeviceName)
+    leader_arm_model = f"{os.path.dirname(os.path.realpath(__file__))}/../../models/leader_arm/model.urdf"
+    leader_arm = rby.upc.LeaderArm(rby.upc.LeaderArmDeviceName)
+    leader_arm.set_model_path(leader_arm_model)
+    leader_arm.set_control_period(Settings.leader_arm_loop_period)
+    active_ids = leader_arm.initialize(verbose=False)
+    if len(active_ids) != rby.upc.LeaderArm.DeviceCount:
         logging.error(
-            f"Mismatch in the number of devices detected for RBY Master Arm (active devices: {active_ids})"
+            f"Mismatch in the number of devices detected for RBY Leader Arm (active devices: {active_ids})"
         )
         exit(1)
 
@@ -317,11 +317,11 @@ def main(address, model, power, servo, control_mode):
             position_mode=position_mode,
         )
     )
-    logging.info("Aligning the master arm to READY_POSE before enabling teleoperation.")
+    logging.info("Aligning the leader arm to READY_POSE before enabling teleoperation.")
 
     def cleanup(exit_code=1):
         robot.stop_state_update()
-        master_arm.stop_control()
+        leader_arm.stop_control()
         stream.cancel()
         robot.cancel_control()
         time.sleep(0.5)
@@ -333,7 +333,7 @@ def main(address, model, power, servo, control_mode):
 
     log_count = 0
 
-    def master_arm_control_loop(state: rby.upc.MasterArm.State):
+    def leader_arm_control_loop(state: rby.upc.LeaderArm.State):
         nonlocal position_mode, right_q, left_q, right_minimum_time, left_minimum_time, log_count, startup_align_phase, startup_align_initialized, startup_align_failed, startup_align_failure_message
 
         if right_q is None:
@@ -341,7 +341,52 @@ def main(address, model, power, servo, control_mode):
         if left_q is None:
             left_q = state.q_joint[7:14]
 
-        ma_input = rby.upc.MasterArm.ControlInput()
+        ma_input = rby.upc.LeaderArm.ControlInput()
+
+        if startup_align_phase:
+            if not startup_align_initialized:
+                right_q = state.q_joint[0:7].copy()
+                left_q = state.q_joint[7:14].copy()
+                startup_align_initialized = True
+
+            right_q += np.clip(
+                READY_POSE.right_arm - right_q,
+                -Settings.startup_align_command_step,
+                Settings.startup_align_command_step,
+            )
+            left_q += np.clip(
+                READY_POSE.left_arm - left_q,
+                -Settings.startup_align_command_step,
+                Settings.startup_align_command_step,
+            )
+
+            ma_input.target_operating_mode[0:7].fill(
+                rby.DynamixelBus.CurrentBasedPositionControlMode
+            )
+            ma_input.target_torque[0:7] = ma_torque_limit[0:7]
+            ma_input.target_position[0:7] = right_q
+            ma_input.target_operating_mode[7:14].fill(
+                rby.DynamixelBus.CurrentBasedPositionControlMode
+            )
+            ma_input.target_torque[7:14] = ma_torque_limit[7:14]
+            ma_input.target_position[7:14] = left_q
+
+            right_error = np.max(np.abs(state.q_joint[0:7] - READY_POSE.right_arm))
+            left_error = np.max(np.abs(state.q_joint[7:14] - READY_POSE.left_arm))
+            if max(right_error, left_error) <= Settings.startup_align_tolerance:
+                startup_align_phase = False
+                right_q = READY_POSE.right_arm.copy()
+                left_q = READY_POSE.left_arm.copy()
+                logging.info("Leader arm aligned to READY_POSE. Teleoperation unlocked.")
+            elif (
+                time.monotonic() - startup_align_start_time
+                > Settings.startup_align_timeout
+            ):
+                startup_align_failed = True
+                startup_align_failure_message = (
+                    "Failed to align the leader arm to READY_POSE within the startup timeout."
+                )
+            return ma_input
 
         if startup_align_phase:
             if not startup_align_initialized:
@@ -389,7 +434,7 @@ def main(address, model, power, servo, control_mode):
             return ma_input
 
         log_count += 1
-        if log_count % round(1 / Settings.master_arm_loop_period) == 0:
+        if log_count % round(1 / Settings.leader_arm_loop_period) == 0:
             print(f"--- {datetime.datetime.now().time()} ---")
             print(f"Button: {state.button_right.button}, {state.button_left.button}")
             print(f"Trigger: {state.button_right.trigger}, {state.button_left.trigger}")
@@ -399,7 +444,7 @@ def main(address, model, power, servo, control_mode):
                 [state.button_right.trigger / 1000, state.button_left.trigger / 1000]
             )
         )
-        # ===== CALCULATE MASTER ARM COMMAND =====
+        # ===== CALCULATE LEADER ARM COMMAND =====
         torque = (
             state.gravity_term
             + ma_q_limit_barrier
@@ -453,9 +498,9 @@ def main(address, model, power, servo, control_mode):
         # ===== BUILD ROBOT COMMAND =====
         rc = rby.BodyComponentBasedCommandBuilder()
         if state.button_right.button and not is_collision:
-            right_minimum_time -= Settings.master_arm_loop_period
+            right_minimum_time -= Settings.leader_arm_loop_period
             right_minimum_time = max(
-                right_minimum_time, Settings.master_arm_loop_period * 1.01
+                right_minimum_time, Settings.leader_arm_loop_period * 1.01
             )
             right_arm_builder = (
                 rby.JointPositionCommandBuilder()
@@ -492,9 +537,9 @@ def main(address, model, power, servo, control_mode):
             right_minimum_time = 0.8
 
         if state.button_left.button and not is_collision:
-            left_minimum_time -= Settings.master_arm_loop_period
+            left_minimum_time -= Settings.leader_arm_loop_period
             left_minimum_time = max(
-                left_minimum_time, Settings.master_arm_loop_period * 1.01
+                left_minimum_time, Settings.leader_arm_loop_period * 1.01
             )
             left_arm_builder = (
                 rby.JointPositionCommandBuilder()
@@ -537,7 +582,7 @@ def main(address, model, power, servo, control_mode):
 
         return ma_input
 
-    master_arm.start_control(master_arm_control_loop)
+    leader_arm.start_control(leader_arm_control_loop)
 
     # ===== SETUP SIGNAL =====
     def handler(signum, frame):

@@ -2,7 +2,7 @@
 # This example demonstrates how to cancel robot control. See --help for arguments.
 #
 # Usage example:
-#     python 06_cancel_command.py --address 192.168.30.1:50051 --model a
+#     python 25_cancel_control.py --address 192.168.30.1:50051 --model a
 #
 # Copyright (c) 2025 Rainbow Robotics. All rights reserved.
 #

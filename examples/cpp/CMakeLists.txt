@@ -36,7 +36,11 @@ set(EXAMPLES
         17_fault_log
         18_dynamics_modeling
         19_dynamics_robot
+<<<<<<< HEAD
         20_master_arm
+=======
+        20_leader_arm
+>>>>>>> upstream/dev
         21_record
         22_replay
         23_zero_pose
@@ -51,7 +55,11 @@ set(EXAMPLES
         32_cartesian_command_stream
         33_real_time_control
         34_teleoperation_with_joint_mapping
+<<<<<<< HEAD
         35_break_test
+=======
+        35_brake_test
+>>>>>>> upstream/dev
         36_mobile_test
         37_stop_command
         38_battery_config
@@ -67,7 +75,7 @@ set(EXAMPLES
 
         set_pid_gain
 
-        demo_motion_with_master_arm
+        demo_motion_with_leader_arm
 )
 
 foreach (SRC IN LISTS EXAMPLES)

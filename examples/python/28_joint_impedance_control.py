@@ -118,38 +118,6 @@ def main(address, model, power, servo):
 
     logging.info("All examples finished successfully.")
 
-    # # Joint Impedance Control
-    # rc_builder = rby.RobotCommandBuilder().set_command(
-    #     rby.ComponentBasedCommandBuilder().set_body_command(
-    #         rby.BodyComponentBasedCommandBuilder()
-    #         .set_right_arm_command(
-    #             rby.JointImpedanceControlCommandBuilder()
-    #             .set_command_header(
-    #                 rby.CommandHeaderBuilder().set_control_hold_time(10)
-    #             )
-    #             .set_position([0.0] * len(model.right_arm_idx))
-    #             .set_minimum_time(5)
-    #             .set_stiffness([100.0] * len(model.right_arm_idx))
-    #             .set_damping_ratio(1.0)
-    #             .set_torque_limit([10] * len(model.right_arm_idx))
-    #         )
-    #         .set_left_arm_command(
-    #             rby.JointImpedanceControlCommandBuilder()
-    #             .set_command_header(
-    #                 rby.CommandHeaderBuilder().set_control_hold_time(10)
-    #             )
-    #             .set_position([0.0] * len(model.left_arm_idx))
-    #             .set_minimum_time(5)
-    #             .set_stiffness([100.0] * len(model.left_arm_idx))
-    #             .set_damping_ratio(1.0)
-    #             .set_torque_limit([10] * len(model.left_arm_idx))
-    #         )
-    #     )
-    # )
-    # handler = robot.send_command(rc_builder)
-    # rv = handler.get()
-    # logging.info(f"Finish Code: {rv.finish_code}")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="28_joint_impedance_control")
