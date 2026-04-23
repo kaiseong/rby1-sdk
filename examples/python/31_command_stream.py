@@ -62,7 +62,7 @@ def main(address, model, power, servo):
 
     dt = 0.001
     for t in range(0, 10000):
-        q = [0.0] * 6 + [0.0] * 7 + [0.0] * 6 + [math.pi / 4.0 * math.sin(math.pi * 2 * t * dt / 5)]
+        q = [0.0] * 6 + [0.0] * 7 + [0.0] * 4 + [math.pi / 4.0 * math.sin(math.pi * 2 * t * dt / 5)] + [0.0] * 2
         rc = rby.RobotCommandBuilder().set_command(
             rby.ComponentBasedCommandBuilder().set_body_command(
                 rby.JointPositionCommandBuilder()

@@ -22,6 +22,7 @@ import numpy as np
 import time
 import argparse
 import logging
+import signal
 from typing import Iterable
 import importlib
 
@@ -107,16 +108,6 @@ def main(address, model, power, servo):
         [0, 0, 0.08],
         [0, -0.2, 0.1],
         [0, -0.2, -0.1],
-        [-0.05, 0.1, -0.08],
-        [-0.05, 0.1, 0.08],
-        [0, -0.2, 0.1],
-        [0, -0.2, -0.1],
-        [0, 0, -0.08],
-        [0, 0, 0.08],
-        [0, -0.16, 0.08],
-        [0, -0.16, -0.08],
-        [0, 0, -0.08],
-        [0, 0, 0.08],
     ]:
         target = T_ref.copy()
         target[0, 3] += pos_diff[0]

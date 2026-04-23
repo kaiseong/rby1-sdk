@@ -40,8 +40,8 @@ def example_ready_command(robot):
 
     # Set specific joint positions
     q_joint_waist = [0, 45 * D2R, -90 * D2R, 45 * D2R, 0, 0]
-    q_joint_right_arm = [0, -5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
-    q_joint_left_arm = [0, 5 * D2R, 0, -120 * D2R, 0, 70 * D2R, 0]
+    q_joint_right_arm = [0, -5 * D2R, 0, -120 * D2R, 0, 50 * D2R, 0]
+    q_joint_left_arm = [0, 5 * D2R, 0, -120 * D2R, 0, 50 * D2R, 0]
 
     if not movej(robot, torso=q_joint_waist, right_arm=q_joint_right_arm, left_arm=q_joint_left_arm, minimum_time=7.0):
         print("Error: Failed to conduct demo motion.")
