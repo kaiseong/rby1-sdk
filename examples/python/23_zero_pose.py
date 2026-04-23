@@ -14,6 +14,7 @@
 import rby1_sdk as rby
 import argparse
 import numpy as np
+import logging
 import importlib
 
 helper = importlib.import_module("00_helper")

@@ -19,6 +19,11 @@ import logging
 import numpy as np
 import rby1_sdk as rby
 from typing import Iterable
+import importlib
+
+helper = importlib.import_module("00_helper")
+initialize_robot = helper.initialize_robot
+movej = helper.movej
 
 
 logging.basicConfig(

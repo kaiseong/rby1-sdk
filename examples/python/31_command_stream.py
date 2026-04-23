@@ -20,10 +20,9 @@ import argparse
 import logging
 import math
 import signal
-import time
-import numpy as np
 import rby1_sdk as rby
-
+import numpy as np
+import time
 import importlib
 
 helper = importlib.import_module("00_helper")

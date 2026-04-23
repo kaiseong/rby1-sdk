@@ -19,12 +19,15 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 
-
-
 import rby1_sdk as rby
 import numpy as np
 import argparse
 from typing import Iterable
+import importlib
+
+helper = importlib.import_module("00_helper")
+initialize_robot = helper.initialize_robot
+movej = helper.movej
 
 D2R = np.pi / 180  # Degree to Radian conversion factor
 MINIMUM_TIME = 2

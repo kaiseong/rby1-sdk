@@ -19,6 +19,11 @@ import time
 
 import numpy as np
 import rby1_sdk as rby
+import importlib
+
+helper = importlib.import_module("00_helper")
+initialize_robot = helper.initialize_robot
+movej = helper.movej
 
 STOP_DISTANCE = 0.03
 RIGHT_ARM_TARGET = np.array(

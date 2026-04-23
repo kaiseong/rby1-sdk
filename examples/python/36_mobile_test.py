@@ -18,6 +18,7 @@
 # the use or misuse of this demo code. Please use with caution and at your own discretion.
 
 import importlib
+import rby1_sdk as rby
 import numpy as np
 import sys
 import argparse
