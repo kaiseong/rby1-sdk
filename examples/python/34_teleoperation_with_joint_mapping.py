@@ -320,15 +320,31 @@ def main(address, model, power, servo, control_mode):
     logging.info("Aligning the leader arm to READY_POSE before enabling teleoperation.")
 
     def cleanup(exit_code=1):
-        robot.stop_state_update()
-        leader_arm.stop_control()
-        stream.cancel()
-        robot.cancel_control()
+        print(f"\n[{signum}] stop. safe stop procedure.")
+        
+        try: robot.stop_state_update()
+        except: pass
+        
+        try: master_arm.stop_control()
+        except: pass
+        
+        try: robot.cancel_control()
+        except: pass
+        
         time.sleep(0.5)
-        robot.disable_control_manager()
-        robot.power_off("12v")
-        gripper.stop()
-        robot.disconnect()
+        try: robot.disable_control_manager()
+        except: pass
+        
+        try: robot.power_off("12v")
+        except: pass
+        
+        try: gripper.stop()
+        except: pass
+
+        try: robot.disconnect()
+        except: pass
+        
+        print("end.")
         raise SystemExit(exit_code)
 
     log_count = 0
@@ -589,6 +605,7 @@ def main(address, model, power, servo, control_mode):
         cleanup(1)
 
     signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGTERM, handler)
 
     while True:
         if startup_align_failed:
