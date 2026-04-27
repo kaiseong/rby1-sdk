@@ -1283,7 +1283,7 @@ Examples
 ... )
 >>> handler = robot.send_command(command)
 >>> handler.wait()  # Wait for completion
->>> # This pattern is used in most examples: examples/python/27_impedance_control.py, examples/python/24_demo_motion.py, etc.
+>>> # This pattern is used in most examples: examples/python/07_impedance_control.py, 09_demo_motion.py, etc.
 )doc")
       .def("create_command_stream", &Robot<T>::CreateCommandStream, "priority"_a = 1, R"doc(
 Create a command stream for continuous command sending.
@@ -1309,7 +1309,7 @@ Examples
 ...     time.sleep(1)
 >>> # Through the handler, you can terminate control or check the current state
 >>> stream_handler.cancel()
->>> # See examples/python/32_cartesian_command_stream.py for complete usage
+>>> # See examples/python/cartesian_command_stream.py for complete usage
 )doc")
       .def(
           "control",

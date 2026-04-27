@@ -86,7 +86,6 @@ if (BUILD_EXAMPLES)
     add_subdirectory(examples/cpp)
     #     target_link_libraries(example_leader_arm PRIVATE Threads::Threads)
     target_link_libraries(example_teleoperation_with_joint_mapping PRIVATE Threads::Threads)
-    target_link_libraries(example_teleoperation_with_joint_mapping_kgs PRIVATE Threads::Threads)
 endif ()
 
 ############################################################
