@@ -40,7 +40,7 @@ def move_to_pre_control_pose(robot):
 def example_joint_command(robot):
     """Move to the joint pose before appling impedance control."""
     logging.info("===== joint Control Command Example =====")
-    
+
     torso = np.array([0.0,0.3386,-0.8486,1.0331,0.0,0.0])
     right_arm = np.array([0.1112, -1.4714,  -0.1801, -2.0418, -1.9436,  0.8052,  -0.6198])
     left_arm = np.array([0.1112,  1.4715,  0.1801, -2.0418,  1.9436,  0.8052,    0.6198])
@@ -107,7 +107,7 @@ def main(address, model, power, servo):
         logging.error(f"Failed to enable control manager")
         exit(1)
 
-    
+
     move_to_pre_control_pose(robot)
 
     if not example_joint_command(robot):

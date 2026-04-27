@@ -32,7 +32,7 @@ def main(address, model):
     elif len(model_info.mobility_idx) == 4 and model == "a":
         print("wrong model argument. this robot model is m")
         exit(1)
-    
+
     robot_info = robot.get_robot_info()
     print(f"Hello, RB-Y1! (Robot model name: {model_info.model_name})")
 

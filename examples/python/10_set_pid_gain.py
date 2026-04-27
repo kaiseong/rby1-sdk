@@ -1,5 +1,5 @@
 ############################## CAUTION ###############################
-# The motor PID values ​​currently set on the robot are internally optimized. 
+# The motor PID values ​​currently set on the robot are internally optimized.
 # Please exercise caution to prevent accidents caused by changing the PID values.
 ######################################################################
 ################################ Note ################################
@@ -37,7 +37,7 @@ logging.basicConfig(
 def main(address, model):
     logging.info(f"Creating robot with address='{address}', model='{model}'")
     robot = rby.create_robot(address, model)
-    
+
     if not robot.connect():
         logging.error("Robot is not connected")
         exit(1)

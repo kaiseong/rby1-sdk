@@ -226,7 +226,7 @@ def move_j(robot: Union[rby.Robot_A, rby.Robot_M], pose: Pose, minimum_time=5.0)
 def main(address, model, power, servo, control_mode):
     # ===== SETUP ROBOT =====
     robot = initialize_robot(address, model, power, servo)
-    
+
     supported_model = ["A", "M"]
     supported_control_mode = ["position", "impedance"]
     model = robot.model()
@@ -253,7 +253,7 @@ def main(address, model, power, servo, control_mode):
         )
         exit(1)
     position_mode = control_mode == "position"
-    
+
     for arm in ["right", "left"]:
         if not robot.set_tool_flange_output_voltage(arm, 12):
             logging.error(f"Failed to set tool flange output voltage ({arm}) as 12v")
@@ -321,29 +321,29 @@ def main(address, model, power, servo, control_mode):
 
     def cleanup(exit_code=1):
         print(f"\n[{signum}] stop. safe stop procedure.")
-        
+
         try: robot.stop_state_update()
         except: pass
-        
+
         try: master_arm.stop_control()
         except: pass
-        
+
         try: robot.cancel_control()
         except: pass
-        
+
         time.sleep(0.5)
         try: robot.disable_control_manager()
         except: pass
-        
+
         try: robot.power_off("12v")
         except: pass
-        
+
         try: gripper.stop()
         except: pass
 
         try: robot.disconnect()
         except: pass
-        
+
         print("end.")
         raise SystemExit(exit_code)
 
