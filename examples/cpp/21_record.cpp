@@ -14,10 +14,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cctype>
-<<<<<<< HEAD
-=======
 #include <chrono>
->>>>>>> upstream/dev
 #include <csignal>
 #include <fstream>
 #include <iostream>
@@ -98,11 +95,7 @@ int Run(const std::string& address) {
         std::vector<double> frame(state.position.data(), state.position.data() + state.position.size());
         g_recorded_traj.push_back(std::move(frame));
         std::cout << "---" << std::endl;
-<<<<<<< HEAD
-        std::cout << "current position: " << state.target_position.transpose() << std::endl;
-=======
         std::cout << "target position: " << state.target_position.transpose() << std::endl;
->>>>>>> upstream/dev
       },
       10);
 

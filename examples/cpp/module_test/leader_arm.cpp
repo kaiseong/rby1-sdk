@@ -10,20 +10,12 @@
 using namespace rb;
 using namespace std::chrono_literals;
 
-<<<<<<< HEAD:examples/cpp/module_test/master_arm.cpp
-std::shared_ptr<upc::MasterArm> master_arm = std::make_shared<upc::MasterArm>("/dev/rby1_master_arm");
-=======
 std::shared_ptr<upc::LeaderArm> leader_arm = std::make_shared<upc::LeaderArm>(upc::kLeaderArmDeviceName);
->>>>>>> upstream/dev:examples/cpp/module_test/leader_arm.cpp
 std::function<void()> g_robot_power_off;
 
 void signalHandler(int signum) {
 
-<<<<<<< HEAD:examples/cpp/module_test/master_arm.cpp
-  master_arm->StopControl();
-=======
   leader_arm->StopControl();
->>>>>>> upstream/dev:examples/cpp/module_test/leader_arm.cpp
   if (g_robot_power_off) g_robot_power_off();
   exit(signum);
 }
